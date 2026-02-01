@@ -78,8 +78,11 @@
     - [RAID1](#raid1)
     - [BTRFS](#btrfs-1)
     - [Service](#service)
-      - [ACL](#acl)
-      - [Volume](#volume)
+      - [tgt or targetcli](#tgt-or-targetcli)
+      - [Install target](#install-target)
+        - [ACL](#acl)
+        - [Volume](#volume)
+      - [Install tgt](#install-tgt)
       - [Login](#login)
 - [Maintenance](#maintenance)
   - [Postfix](#postfix)
@@ -2418,6 +2421,30 @@ Here is a concise breakdown of common Input/Output (I/O) methods used in storage
 - `rbd`- Stands for Redos Block Device. It is the native block storage format for the distributed storage system Ceph.
    Use Case: Used to provide scalable and highly available block storage for virtual machines and containers within large, distributed cloud environments.
 
+#### tgt or targetcli
+
+- `tgt` is older implementation to manage iSCSI using config files
+  
+- `targetcli` is a newer implementation for iSCSI management, but its biggest problem is that it uses Python, which makes maintaining this tool a hell, it means -> dependency
+
+Today issue after update Python from 3.13 to 3.14, so instead of doing something productive, I need to fix Python :/
+
+```bash
+Traceback (most recent call last):
+  File "/usr/bin/targetcli", line 5, in <module>
+    from targetcli.targetcli_shell import main
+  File "/usr/lib/python3.13/site-packages/targetcli/targetcli_shell.py", line 29, in <module>
+    from configshell import ConfigShell, ExecutionError
+ModuleNotFoundError: No module named 'configshell'
+```
+
+When you check the github projects
+
+- [targetcli](https://github.com/Datera/targetcli) - last commit - 11 years ago
+- [tgt](https://github.com/fujita/tgt) - last commit - 4 months ago
+
+#### Install target
+
 Install required package
 
 ```bash
@@ -2451,7 +2478,7 @@ $ targetcli
 Configuration saved to /etc/target/saveconfig.json
 ```
 
-#### ACL
+##### ACL
 
 Switching ACL to dynamic mode.
 
@@ -2462,7 +2489,7 @@ Switching ACL to dynamic mode.
 /iscsi/iqn.20...ap:iscsi/tpg1> set attribute prod_mode_write_protect=0
 ```
 
-#### Volume
+##### Volume
 
 Create a file to be used as a volume
 
@@ -2495,6 +2522,28 @@ o- luns ........................................................................
 /> saveconfig 
 Configuration saved to /etc/target/saveconfig.json
 /> exit
+```
+
+#### Install tgt
+
+```bash
+pacman -S tgt
+```
+
+Run service
+
+```bash
+systemctl enable tgtd.service
+systemctl start tgtd.service
+```
+
+Check if service is works
+
+```bash
+$ ss -lntp | grep 3260
+
+LISTEN 0      4096                              0.0.0.0:3260       0.0.0.0:*    users:(("tgtd",pid=2506,fd=7))            
+LISTEN 0      4096                                 [::]:3260          [::]:*    users:(("tgtd",pid=2506,fd=8))
 ```
 
 #### Login
