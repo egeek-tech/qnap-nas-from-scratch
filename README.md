@@ -2574,25 +2574,25 @@ LISTEN 0      4096                                 [::]:3260          [::]:*    
 
 #### Login
 
-<!-- ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --login
+```bash
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --login
 ```
 
 If you forget to set up credentials
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.authmethod -v CHAP
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.authmethod -v CHAP
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.username -v my_user
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.username -v my_user
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.password -v my_pass
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.password -v my_pass
 ```
 
-Now you can access volume, remember to format or/and create partition. -->
+Now you can access volume, remember to format or/and create partition.
 
 # Maintenance
 
@@ -3520,29 +3520,29 @@ fstabfmt -i /etc/fstab
 First discovery service
 
 ```bash
-$ iscsiadm --mode discovery --portal 10.0.12.90 --type sendtargets
+$ iscsiadm --mode discovery --portal 10.5.20.8 --type sendtargets
 
-10.0.12.90:3260,1 iqn.2025-11.local.qnap-iscsi:1212121212
+10.5.20.8:3260,1 iqn.2025-11.local.qnap-iscsi:1212121212
 ```
 
 Now login to service
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --login
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --login
 ```
 
 If you forget to set up credentials
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.authmethod -v CHAP
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.authmethod -v CHAP
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.username -v my_user
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.username -v my_user
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.password -v my_pass
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.password -v my_pass
 ```
 
 Logout
