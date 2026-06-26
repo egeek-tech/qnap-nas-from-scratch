@@ -2650,8 +2650,8 @@ Configuration
 # /etc/postfix/main.cf
 
 relayhost = [smtp.gmail.com]:587
-smtp_tls_security_level = may
-smtp_tls_policy_maps = lmdb:/etc/postfix/tls_policy
+smtp_tls_security_level = encrypt
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
 smtp_sasl_auth_enable = yes
 smtp_sasl_password_maps = lmdb:/etc/postfix/sasl_passwd
 smtp_sasl_security_options = noanonymous
@@ -2666,18 +2666,9 @@ Password
 [smtp.gmail.com]:587    <user>@gmail.com:<password>
 ```
 
-Encryption map
-
-```bash
-# /etc/postfix/tls_policy
-
-[smtp.gmail.com]:587 encrypt
-```
-
 ```bash
 chmod 600 /etc/postfix/sasl_passwd
 postmap lmdb:/etc/postfix/sasl_passwd
-postmap lmdb:/etc/postfix/tls_policy
 ```
 
 > [!WARNING]
