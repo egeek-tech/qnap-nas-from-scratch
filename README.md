@@ -3507,7 +3507,7 @@ gem install colorls
   Powerlevel10k is a theme for Zsh. It emphasizes speed, flexibility and out-of-the-box experience. Powerlevel10k.
 
   ```bash
-  yay -S https://github.com/romkatv/powerlevel10k
+  yay -S zsh-theme-powerlevel10k-git
   ```
 
   ```diff
