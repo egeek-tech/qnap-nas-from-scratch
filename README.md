@@ -1402,6 +1402,14 @@ After switching the UART to [polling mode](#uart-fix), agetty works correctly, t
 
 ## Disk Topology
 
+> **Note on UUIDs:** The filesystem, LUKS, and RAID UUIDs shown throughout this
+> guide (in `mdadm.conf`, `/etc/crypttab`, `/etc/fstab`, and the kernel command
+> line) are from the author's own system. They are identifiers, not secrets, but
+> they are unique to each install — yours will differ, so generate your own and
+> substitute them. Look them up with `blkid` / `lsblk -f` (filesystem and LUKS
+> UUIDs), `cryptsetup luksUUID <device>` (LUKS header), and `mdadm --detail
+> <array>` (RAID array UUID).
+
 ```bash
 Media & Private with cache writethrough
 
@@ -1661,6 +1669,18 @@ lvcreate -L  12G -n cachemeta_private vg_files /dev/mapper/crypt_cache_files
 >
 > Add hook `lvm2` after `sd-encrypt` to `/etc/mkinitcpio.conf`  
 > `... block mdadm_udev sd-encrypt lvm2 btrfs filesystems fsck`
+
+Convert each data + metadata pair into a cache-pool and attach it to its origin
+LV. `writethrough` keeps the origin in sync on every write, so the array survives
+a cache-device failure with no data loss.
+
+```bash
+lvconvert --type cache-pool --poolmetadata vg_files/cachemeta_media vg_files/cachedata_media
+lvconvert --type cache --cachemode writethrough --chunksize 512k --cachepool vg_files/cachedata_media vg_files/lv_media
+
+lvconvert --type cache-pool --poolmetadata vg_files/cachemeta_private vg_files/cachedata_private
+lvconvert --type cache --cachemode writethrough --chunksize 512k --cachepool vg_files/cachedata_private vg_files/lv_private
+```
 
 Validate
 
@@ -2205,6 +2225,48 @@ Device     Start       End   Sectors   Size Type
 /dev/sda1   2048 976773119 976771072 465.8G Linux RAID
 ```
 
+### RAID1
+
+```bash
+mdadm --create /dev/md1 --level=1 \
+  --raid-devices=2 \
+  --metadata=1.2 \
+  --chunk=256 --bitmap=internal \
+  --name=iscsi \
+  /dev/sda1 /dev/sdb1
+```
+
+Add the RAID map to `/etc/mdadm.conf`
+
+```bash
+mdadm --detail --scan | tee /etc/mdadm.conf
+```
+
+which should give the following results
+
+```conf
+cat /etc/mdadm.conf 
+ARRAY /dev/md0 metadata=1.2 UUID=e9ab286b:4d2232ae:fbb328ae:96b98307
+ARRAY /dev/md1 metadata=1.2 UUID=cd295687:710983a2:93d611f8:2e32e0cf
+```
+
+Check the RAID status
+
+```bash
+$ cat /proc/mdstat
+
+Personalities : [raid1] [raid4] [raid5] [raid6] 
+md1 : active raid1 sdb1[1] sda1[0]
+      488253440 blocks super 1.2 [2/2] [UU]
+      bitmap: 0/4 pages [0KB], 65536KB chunk
+
+md0 : active raid6 sde1[2] sdd1[1] sdf1[3] sdc1[0] sdg1[4]
+      11720653824 blocks super 1.2 level 6, 256k chunk, algorithm 2 [5/5] [UUUUU]
+      bitmap: 0/30 pages [0KB], 65536KB chunk
+
+unused devices: <none>
+```
+
 ### Encryption
 
 > [!TIP]
@@ -2289,6 +2351,15 @@ lvcreate -L 180G -n cachedata_iscsi vg_iscsi /dev/mapper/crypt_cache_iscsi
 lvcreate -L 12G -n cachemeta_iscsi vg_iscsi /dev/mapper/crypt_cache_iscsi
 ```
 
+Convert the data + metadata pair into a cache-pool and attach it to the origin
+LV. `writeback` gives the fastest writes, at the risk of data loss noted above if
+the cache device fails.
+
+```bash
+lvconvert --type cache-pool --poolmetadata vg_iscsi/cachemeta_iscsi vg_iscsi/cachedata_iscsi
+lvconvert --type cache --cachemode writeback --chunksize 256k --cachepool vg_iscsi/cachedata_iscsi vg_iscsi/lv_iscsi
+```
+
 Validate
 
 ```bash
@@ -2300,48 +2371,6 @@ lvs -a -o lv_name,segtype,cachemode,devices vg_iscsi
   lv_iscsi                      cache      writeback lv_iscsi_corig(0)                   
   [lv_iscsi_corig]              linear               /dev/mapper/crypt_iscsi(0)          
   [lvol0_pmspare]               linear               /dev/mapper/crypt_iscsi(114944)
-```
-
-### RAID1
-
-```bash
-mdadm --create /dev/md1 --level=1 \
-  --raid-devices=2 \
-  --metadata=1.2 \
-  --chunk=256 --bitmap=internal \
-  --name=iscsi \
-  /dev/sda1 /dev/sdb1
-```
-
-Add the RAID map to `/etc/mdadm.conf`
-
-```bash
-mdadm --detail --scan | tee /etc/mdadm.conf
-```
-
-which should give the following results
-
-```conf
-cat /etc/mdadm.conf 
-ARRAY /dev/md0 metadata=1.2 UUID=e9ab286b:4d2232ae:fbb328ae:96b98307
-ARRAY /dev/md1 metadata=1.2 UUID=cd295687:710983a2:93d611f8:2e32e0cf
-```
-
-Check the RAID status
-
-```bash
-$ cat /proc/mdstat
-
-Personalities : [raid1] [raid4] [raid5] [raid6] 
-md1 : active raid1 sdb1[1] sda1[0]
-      488253440 blocks super 1.2 [2/2] [UU]
-      bitmap: 0/4 pages [0KB], 65536KB chunk
-
-md0 : active raid6 sde1[2] sdd1[1] sdf1[3] sdc1[0] sdg1[4]
-      11720653824 blocks super 1.2 level 6, 256k chunk, algorithm 2 [5/5] [UUUUU]
-      bitmap: 0/30 pages [0KB], 65536KB chunk
-
-unused devices: <none>
 ```
 
 ### BTRFS
