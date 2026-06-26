@@ -73,9 +73,9 @@
       - [Gerbera Media Server](#gerbera-media-server)
   - [ISCSI](#iscsi)
     - [Partition](#partition-1)
+    - [RAID1](#raid1)
     - [Encryption](#encryption-1)
     - [LVM](#lvm-1)
-    - [RAID1](#raid1)
     - [BTRFS](#btrfs-1)
     - [Service](#service)
       - [tgt or targetcli](#tgt-or-targetcli)
@@ -123,7 +123,7 @@ The QNAP [TS-h973AX](https://www.qnap.com/en/product/ts-h973ax) is a 9-bay NAS s
 
 Specification:
 
-- CPU - AMD Ryzen™ Embedded V1500B 2.2 GHz 2 (8 treads)
+- CPU - AMD Ryzen™ Embedded V1500B 2.2 GHz 2 (8 threads)
 - RAM - max 64GB DDR4 SO-DIMM
 - Drive Bays - 9 bays
   - 5 x 3.5" SATA 6 Gb/s
@@ -172,7 +172,7 @@ picocom -b 115200 -f n /dev/ttyUSB0
 
 ### Investigation
 
-I've spent many hours trying to understand why `UART` works unstable and quickly hangs for never distribution like [Debian](https://www.debian.org), [Arch Linux](https://archlinux.org), [TrueNAS](https://www.truenas.com), but works stable during [POST messages](https://en.wikipedia.org/wiki/Power-on_self-test), [BIOS interaction](https://www.techtarget.com/whatis/definition/BIOS-basic-input-output-system) and **all the time** for [QuTS hero](https://www.qnap.com/en/operating-system/quts-hero).
+I've spent many hours trying to understand why `UART` works unstable and quickly hangs for newer distribution like [Debian](https://www.debian.org), [Arch Linux](https://archlinux.org), [TrueNAS](https://www.truenas.com), but works stable during [POST messages](https://en.wikipedia.org/wiki/Power-on_self-test), [BIOS interaction](https://www.techtarget.com/whatis/definition/BIOS-basic-input-output-system) and **all the time** for [QuTS hero](https://www.qnap.com/en/operating-system/quts-hero).
 
 - QuTS hero has an additional command in the [DSDT](https://wiki.archlinux.org/title/DSDT) table for ACPI that allows reconfiguring the UART (`UAR1`, `UAR2`) via an [ACPI calls](https://github.com/mkottman/acpi_call), but after trying to change the configuration it refused to turn on.
 
@@ -314,7 +314,7 @@ There are two possibilities to make the boot work:
    ```bash
    +-------------------------------+
    |           |                   |
-   |   EFI     |      Linus OS     |
+   |   EFI     |      Linux OS     |
    | Partition |                   |
    |           |                   |
    +-------------------------------+
@@ -490,8 +490,13 @@ Instead of adding another kernel parameter, there is possibility to add this set
 ```conf
 # /etc/crypttab.initramfs
 
-luks_root    UUID=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX   /root.key:UUID=ZZZZZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZZZZZZZZZ   luks,keyfile-timeout=10s
+luks_root    UUID=7f0cc063-e383-4244-b4cb-12e6c396947f   /root.key:UUID=1b7f1652-da86-45f3-9e5e-8e5d39fa9077   luks,discard,keyfile-timeout=10s
 ```
+
+> [!WARNING]
+> The UUIDs above are real and specific to **this** machine. When rebuilding,
+> generate your **own** `/root.key` and substitute your **own** partition UUIDs
+> (`blkid`) — never reuse the keyfile or the values shown here.
 
 ### TPM & TANG
 
@@ -555,7 +560,7 @@ cryptsetup open /dev/nvme0n1p2 luks_root
 
 ### Use dedicate AMD Encryption controller
 
-AMD Encryption controller is detect  but Kernel report some issue.
+AMD Encryption controller is detected  but Kernel report some issue.
 
 ```bash
 10:00.2 Encryption controller: Advanced Micro Devices, Inc. [AMD] Raven/Raven2/FireFlight/Renoir/Cezanne Platform Security Processor
@@ -673,8 +678,8 @@ Partitioning depends on the approach you choose, with or without a USB DOM (chec
 Required disk configuration:
 
 - Disk partition table need to use `GPT`
-- EFI parition needs to use correct type `EFI System`
-- OS parition should be `Linux filesystem`
+- EFI partition needs to use correct type `EFI System`
+- OS partition should be `Linux filesystem`
 
 ```bash
 $ fdisk /dev/nvme0n1 -l
@@ -832,7 +837,7 @@ Install basic packages
 
 ```bash
 pacstrap /mnt amd-ucode base base-devel bash-completion \
-  linux linux-headers linux-firmware openssh vim btrfs-progs
+  linux linux-headers linux-firmware openssh vim btrfs-progs cryptsetup lvm2 mdadm
 ```
 
 > [!IMPORTANT]
@@ -1038,9 +1043,9 @@ yay --editmenu --save
 ```bash
 yay -S fzf-marks \
   mkinitcpio-systemd-extras \
-  # mkinitcpio-systemd-root-password \
   setserial \
-  fstabfmt \
+  fstabfmt
+# Optional: mkinitcpio-systemd-root-password
 ```
 
 ### Configure network
@@ -1102,7 +1107,7 @@ TxFlowControl=yes
 Check flowcontrol
 
 ```bash
-ethtool -a iscsi0                                                                                                                                    ✔  ⚡  66  00:22:53 
+ethtool -a iscsi0
 Pause parameters for iscsi0:
 Autonegotiate:  on
 RX:             on
@@ -1148,10 +1153,10 @@ Hooks:
 # /etc/mkinitcpio.conf
 
 ...
-MODULES=(atlantic igc ethernet)
+MODULES=(atlantic igc vfat)
 ...
 
-HOOKS=(base systemd btrfs autodetect microcode modconf kms keyboard sd-vconsole block mdadm_udev sd-network sd-resolve block sd-clevis sd-encrypt lvm2 filesystems fsck)
+HOOKS=(base systemd btrfs autodetect microcode modconf kms keyboard sd-vconsole block mdadm_udev sd-network sd-resolve sd-clevis sd-encrypt lvm2 filesystems fsck)
 ```
 
 > [!CAUTION]
@@ -1177,7 +1182,7 @@ title Arch
 linux /vmlinuz-linux
 initrd /initramfs-linux.img
 initrd /amd-ucode.img
-options options rd.neednet=1 rd.luks.uuid=7f0cc063-e383-4244-b4cb-12e6c396947f root=UUID=e0ff3e81-a516-4dbf-8103-8503655db764 rw mitigations=auto audit=off console=ttyS0,115200n8 console=tty0 loglevel=6 8250.nr_uarts=2 8250.skip_txen_test=1  
+options rd.neednet=1 rd.luks.uuid=7f0cc063-e383-4244-b4cb-12e6c396947f root=UUID=73c2c033-b5e9-4a1f-8ed1-2cb5a55c0121 rw mitigations=auto audit=off console=ttyS0,115200n8 console=tty0 loglevel=6 8250.nr_uarts=2 8250.skip_txen_test=1  
 ```
 
 > [!WARNING]
@@ -1236,7 +1241,7 @@ cp .zshrc /etc/skel
 Copy file to existing user
 
 ```bash
-cp /etc/shel/* /home/my_user
+cp -a /etc/skel/. /home/my_user/
 ```
 
 #### Timezone and date
@@ -1282,7 +1287,7 @@ hostnamectl hostname qnap
 
 #### Locale (again)
 
-Run this commands again, which will update the `/etc/vconsole.conf` file with the proper value
+Run this command again. It writes `KEYMAP=` to `/etc/vconsole.conf` and, unless `--no-convert` is passed, also applies the closest matching X11 layout (stored as an Xorg `InputClass` snippet in `/etc/X11/xorg.conf.d/00-keyboard.conf`).
 
 ```bash
 localectl set-keymap pl2
@@ -1292,9 +1297,6 @@ localectl set-keymap pl2
 # /etc/vconsole.conf
 
 KEYMAP=pl2
-XKBLAYOUT=pl
-XKBMODEL=pc105
-XKBOPTIONS=terminate:ctrl_alt_bksp
 ```
 
 ### OS optimization
@@ -1402,6 +1404,14 @@ After switching the UART to [polling mode](#uart-fix), agetty works correctly, t
 
 ## Disk Topology
 
+> **Note on UUIDs:** The filesystem, LUKS, and RAID UUIDs shown throughout this
+> guide (in `mdadm.conf`, `/etc/crypttab`, `/etc/fstab`, and the kernel command
+> line) are from the author's own system. They are identifiers, not secrets, but
+> they are unique to each install — yours will differ, so generate your own and
+> substitute them. Look them up with `blkid` / `lsblk -f` (filesystem and LUKS
+> UUIDs), `cryptsetup luksUUID <device>` (LUKS header), and `mdadm --detail
+> <array>` (RAID array UUID).
+
 ```bash
 Media & Private with cache writethrough
 
@@ -1423,7 +1433,7 @@ Media & Private with cache writethrough
 |                                                |                                           |
 +---------+---------+---------+---------+--------+-------------------------------------------+
 |         |         |         |         |        |                                           |
-|   sdc1  |   sdd1  |   sde1  |   sdf1  |  sdg1  |                  nvme0n1p1                |
+|   sdc1  |   sdd1  |   sde1  |   sdf1  |  sdg1  |                  nvme1n1p1                |
 |         |         |         |         |        |                                           |
 +---------+---------+---------+---------+--------+-------------------------------------------+
 ```
@@ -1445,7 +1455,7 @@ ISCSI with cache writeback
 |                   |                    |
 +---------+---------+--------------------+
 |         |         |                    |
-|   sda1  |   sdb1  |     nvme0n1p2      |
+|   sda1  |   sdb1  |     nvme1n1p2      |
 |         |         |                    |
 +---------+---------+--------------------+
 ```
@@ -1497,7 +1507,7 @@ Device             Start       End   Sectors  Size Type
 Required disk configuration:
 
 - Disk partition table need to use `GPT`
-- OS parition needs be `Linux RAID`
+- OS partition needs be `Linux RAID`
 - minimum 4 disk
 
 ```bash
@@ -1519,9 +1529,9 @@ Device     Start        End    Sectors  Size Type
 mdadm --create /dev/md0 --level=6 \
   --raid-devices=5 \
   --metadata=1.2 \
-  --chunk=256 --bitmap=internal \ 
+  --chunk=256 --bitmap=internal \
   --name=files \
-  /dev/sda1 /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1
+  /dev/sdc1 /dev/sdd1 /dev/sde1 /dev/sdf1 /dev/sdg1
 ```
 
 Add the RAID map to `/etc/mdadm.conf`
@@ -1587,8 +1597,8 @@ Update `crypttab`
 ```bash
 # /etc/crypttab 
 
-crypt_files         UUID=c4f4f635-762a-4102-a049-123456789011   /etc/cryptsetup-keys.d/srv_files.key            luks
-crypt_cache_iscsi   UUID=8bf542fe-a3cd-4944-97fe-123456789011   /etc/cryptsetup-keys.d/nvme_cache_iscsi.key     luks
+crypt_files         UUID=c4f4f635-762a-4102-a049-2ea8a139560e   /etc/cryptsetup-keys.d/srv_files.key            luks,discard
+crypt_cache_files   UUID=9bc667a9-ed69-4b4a-93af-b5cc66638196   /etc/cryptsetup-keys.d/nvme_cache_files.key     luks,discard
 ```
 
 After `daemon-reload` it should create following services
@@ -1633,11 +1643,11 @@ pvchange -x n /dev/mapper/crypt_cache_files
 ```
 
 ```bash
-lvcreate -l 6T -n lv_media vg_files /dev/mapper/crypt_files
-lvcreate -L 100%FREE -n lv_private vg_files /dev/mapper/crypt_files
+lvcreate -L 6T -n lv_media vg_files /dev/mapper/crypt_files
+lvcreate -l 100%FREE -n lv_private vg_files /dev/mapper/crypt_files
 ```
 
-Unblock cache parition
+Unblock cache partition
 
 ```bash
 pvchange -x y /dev/mapper/crypt_cache_files
@@ -1661,6 +1671,18 @@ lvcreate -L  12G -n cachemeta_private vg_files /dev/mapper/crypt_cache_files
 >
 > Add hook `lvm2` after `sd-encrypt` to `/etc/mkinitcpio.conf`  
 > `... block mdadm_udev sd-encrypt lvm2 btrfs filesystems fsck`
+
+Convert each data + metadata pair into a cache-pool and attach it to its origin
+LV. `writethrough` keeps the origin in sync on every write, so the array survives
+a cache-device failure with no data loss.
+
+```bash
+lvconvert --type cache-pool --poolmetadata vg_files/cachemeta_media vg_files/cachedata_media
+lvconvert --type cache --cachemode writethrough --chunksize 512k --cachepool vg_files/cachedata_media vg_files/lv_media
+
+lvconvert --type cache-pool --poolmetadata vg_files/cachemeta_private vg_files/cachedata_private
+lvconvert --type cache --cachemode writethrough --chunksize 512k --cachepool vg_files/cachedata_private vg_files/lv_private
+```
 
 Validate
 
@@ -1724,13 +1746,13 @@ btrfs subvolume set-default 256 /srv/media
 Unmount partition, because `media` will be mounted as `subvolume`
 
 ```bash
-unmount /srv/media
+umount /srv/media
 ```
 
 Add entry to `/etc/fstab`
 
 ```bash
-UUID=88af8746-217c-4f15-90b7-17b7aabaa113  /srv/media   btrfs   subvol=@media,noatime,compress=zstd,space_cache=v2   0 0
+UUID=ac6d1083-f1cb-4e20-aadc-f0850f1f4381  /srv/media   btrfs   subvol=@media,noatime,compress=zstd,space_cache=v2   0 0
 ```
 
 Mount all filesystems mentioned in fstab
@@ -1790,13 +1812,13 @@ btrfs subvolume set-default 256 /srv/private
 Unmount partition, because `private` will be mounted as `subvolume`
 
 ```bash
-unmount /srv/private
+umount /srv/private
 ```
 
 Add entry to `/etc/fstab`
 
 ```bash
-UUID=424d6385-a1e1-48d9-bbf7-7627467be80d  /srv/private  btrfs  subvol=@private,noatime,compress=zstd,space_cache=v2,autodefrag  0 0
+UUID=11dea549-6371-46b7-8de7-5f5cd4d5a892  /srv/private  btrfs  subvol=@private,noatime,compress=zstd,space_cache=v2,autodefrag  0 0
 ```
 
 Mount all filesystems mentioned in fstab
@@ -2165,6 +2187,8 @@ Nov 29 00:12:12 qnap minidlnad[72416]: playlist.c:269: warn: Finished parsing pl
 [Gerbera](https://gerbera.io/) is an open source UPnP media server with a web interface. Follow this [guide](https://wiki.archlinux.org/title/Gerbera) to install it.
 
 ```bash
+pacman -S gerbera
+
 mkdir -p /var/cache/gerbera
 chown gerbera:gerbera /var/cache/gerbera
 ```
@@ -2173,14 +2197,47 @@ chown gerbera:gerbera /var/cache/gerbera
 >
 > Remember to disable UI or enable a password for protection.
 
+A ready-to-use configuration is kept in the repo at
+[`configs/gerbera/config.xml`](configs/gerbera/config.xml). Deploy it to
+`/etc/gerbera/config.xml`, then review the settings that matter most:
 
+```diff
+# /etc/gerbera/config.xml (excerpt)
 
+  <server>
+    # Bind to the LAN, not iscsi0 (storage). Otherwise libupnp picks the
+    # lowest-index interface (iscsi0) and clients never see the server.
++   <interface>nas0</interface>
++   <port>52000</port>
+    <ui enabled="yes">
+      <accounts enabled="yes">
+        # Set the real password on the host; never commit the secret.
++       <account user="gerbera" password="__SET_REAL_PASSWORD_ON_HOST__"/>
+      </accounts>
+    </ui>
+    <home>/var/cache/gerbera/</home>
+  </server>
+  <import>
+    <visible-directories>
++     <add-path name="/srv/media"/>
+    </visible-directories>
+  </import>
+```
 
+Enable and start the service
 
+```bash
+systemctl enable gerbera
+systemctl start gerbera
+```
 
+The web interface and the media library are then reachable at `http://qnap:52000`.
 
-
-
+> [!NOTE]
+> UPnP/DLNA discovery uses SSDP multicast (`239.255.255.250:1900`), which is not
+> routed by default. On a switch or router that performs IGMP snooping the server
+> stays invisible until a multicast querier exists — enable PIM-SM (or an IGMP
+> querier) on the router so clients on the LAN can discover it.
 
 ## ISCSI
 
@@ -2189,7 +2246,7 @@ chown gerbera:gerbera /var/cache/gerbera
 Required disk configuration:
 
 - Disk partition table need to use `GPT`
-- OS parition needs be `Linux RAID`
+- OS partition needs be `Linux RAID`
 - minimum 2 disk
 
 ```bash
@@ -2203,6 +2260,48 @@ Disk identifier: AE1FFFE4-0DE0-46D4-9EC7-01B071742FB0
 
 Device     Start       End   Sectors   Size Type
 /dev/sda1   2048 976773119 976771072 465.8G Linux RAID
+```
+
+### RAID1
+
+```bash
+mdadm --create /dev/md1 --level=1 \
+  --raid-devices=2 \
+  --metadata=1.2 \
+  --chunk=256 --bitmap=internal \
+  --name=iscsi \
+  /dev/sda1 /dev/sdb1
+```
+
+Add the RAID map to `/etc/mdadm.conf`
+
+```bash
+mdadm --detail --scan | tee /etc/mdadm.conf
+```
+
+which should give the following results
+
+```conf
+cat /etc/mdadm.conf 
+ARRAY /dev/md0 metadata=1.2 UUID=e9ab286b:4d2232ae:fbb328ae:96b98307
+ARRAY /dev/md1 metadata=1.2 UUID=cd295687:710983a2:93d611f8:2e32e0cf
+```
+
+Check the RAID status
+
+```bash
+$ cat /proc/mdstat
+
+Personalities : [raid1] [raid4] [raid5] [raid6] 
+md1 : active raid1 sdb1[1] sda1[0]
+      488253440 blocks super 1.2 [2/2] [UU]
+      bitmap: 0/4 pages [0KB], 65536KB chunk
+
+md0 : active raid6 sde1[2] sdd1[1] sdf1[3] sdc1[0] sdg1[4]
+      11720653824 blocks super 1.2 level 6, 256k chunk, algorithm 2 [5/5] [UUUUU]
+      bitmap: 0/30 pages [0KB], 65536KB chunk
+
+unused devices: <none>
 ```
 
 ### Encryption
@@ -2241,8 +2340,8 @@ Update `crypttab`
 ```bash
 # /etc/crypttab 
 
-crypt_iscsi         UUID=2790f108-1a01-4501-abae-b633d1e89312   /etc/cryptsetup-keys.d/srv_iscsi.key            luks
-crypt_cache_iscsi   UUID=8bf542fe-a3cd-4944-97fe-39cfc49dc8d7   /etc/cryptsetup-keys.d/nvme_cache_iscsi.key     luks
+crypt_iscsi         UUID=2790f108-1a01-4501-abae-b633d1e89312   /etc/cryptsetup-keys.d/srv_iscsi.key            luks,discard
+crypt_cache_iscsi   UUID=8bf542fe-a3cd-4944-97fe-39cfc49dc8d7   /etc/cryptsetup-keys.d/nvme_cache_iscsi.key     luks,discard
 ```
 
 After `daemon-reload` it should create following services
@@ -2289,6 +2388,15 @@ lvcreate -L 180G -n cachedata_iscsi vg_iscsi /dev/mapper/crypt_cache_iscsi
 lvcreate -L 12G -n cachemeta_iscsi vg_iscsi /dev/mapper/crypt_cache_iscsi
 ```
 
+Convert the data + metadata pair into a cache-pool and attach it to the origin
+LV. `writeback` gives the fastest writes, at the risk of data loss noted above if
+the cache device fails.
+
+```bash
+lvconvert --type cache-pool --poolmetadata vg_iscsi/cachemeta_iscsi vg_iscsi/cachedata_iscsi
+lvconvert --type cache --cachemode writeback --chunksize 256k --cachepool vg_iscsi/cachedata_iscsi vg_iscsi/lv_iscsi
+```
+
 Validate
 
 ```bash
@@ -2300,48 +2408,6 @@ lvs -a -o lv_name,segtype,cachemode,devices vg_iscsi
   lv_iscsi                      cache      writeback lv_iscsi_corig(0)                   
   [lv_iscsi_corig]              linear               /dev/mapper/crypt_iscsi(0)          
   [lvol0_pmspare]               linear               /dev/mapper/crypt_iscsi(114944)
-```
-
-### RAID1
-
-```bash
-mdadm --create /dev/md0 --level=1 \
-  --raid-devices=2 \
-  --metadata=1.2 \
-  --chunk=256 --bitmap=internal \
-  --name=iscsi \
-  /dev/sdf1 /dev/sdg1
-```
-
-Add the RAID map to `/etc/mdadm.conf`
-
-```bash
-mdadm --detail --scan | tee /etc/mdadm.conf
-```
-
-which should give the following results
-
-```conf
-cat /etc/mdadm.conf 
-ARRAY /dev/md0 metadata=1.2 UUID=e9ab286b:4d2232ae:fbb328ae:96b98307
-ARRAY /dev/md1 metadata=1.2 UUID=cd295687:710983a2:93d611f8:2e32e0cf
-```
-
-Check the RAID status
-
-```bash
-$ cat /proc/mdstat
-
-Personalities : [raid1] [raid4] [raid5] [raid6] 
-md1 : active raid1 sdb1[1] sda1[0]
-      488253440 blocks super 1.2 [2/2] [UU]
-      bitmap: 0/4 pages [0KB], 65536KB chunk
-
-md0 : active raid6 sde1[2] sdd1[1] sdf1[3] sdc1[0] sdg1[4]
-      11720653824 blocks super 1.2 level 6, 256k chunk, algorithm 2 [5/5] [UUUUU]
-      bitmap: 0/30 pages [0KB], 65536KB chunk
-
-unused devices: <none>
 ```
 
 ### BTRFS
@@ -2372,13 +2438,13 @@ btrfs subvolume set-default 256 /srv/iscsi/
 Unmount partition, because `iscsi` will be mounted as `subvolume`
 
 ```bash
-unmount /srv/iscsi
+umount /srv/iscsi
 ```
 
 Add entry to `/etc/fstab`
 
 ```bash
-UUID=f5616810-810a-4a2c-9fdb-856b946236e4  /srv/iscsi    btrfs  subvol=@iscsi,noatime,compress=zstd,space_cache=v2,autodefrag
+UUID=f5616810-810a-4a2c-9fdb-856b946236e4  /srv/iscsi    btrfs  subvol=@iscsi,noatime,compress=zstd,space_cache=v2,autodefrag  0  0
 ```
 
 Mount all filesystems mentioned in fstab
@@ -2418,7 +2484,7 @@ Here is a concise breakdown of common Input/Output (I/O) methods used in storage
 - `ramdisk` - Creates a virtual block device that resides entirely within the computer's RAM (Random Access Memory).
    Use Case: Provides extremely fast data access (the highest I/O speed available), ideal for temporary files or small caches where speed is critical, and data persistence after power loss is not required.
 
-- `rbd`- Stands for Redos Block Device. It is the native block storage format for the distributed storage system Ceph.
+- `rbd`- Stands for RADOS Block Device. It is the native block storage format for the distributed storage system Ceph.
    Use Case: Used to provide scalable and highly available block storage for virtual machines and containers within large, distributed cloud environments.
 
 #### tgt or targetcli
@@ -2548,25 +2614,25 @@ LISTEN 0      4096                                 [::]:3260          [::]:*    
 
 #### Login
 
-<!-- ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --login
+```bash
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --login
 ```
 
 If you forget to set up credentials
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.authmethod -v CHAP
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.authmethod -v CHAP
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.username -v my_user
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.username -v my_user
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.password -v my_pass
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.password -v my_pass
 ```
 
-Now you can access volume, remember to format or/and create partition. -->
+Now you can access volume, remember to format or/and create partition.
 
 # Maintenance
 
@@ -2584,7 +2650,8 @@ Configuration
 # /etc/postfix/main.cf
 
 relayhost = [smtp.gmail.com]:587
-smtp_use_tls = yes
+smtp_tls_security_level = encrypt
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
 smtp_sasl_auth_enable = yes
 smtp_sasl_password_maps = lmdb:/etc/postfix/sasl_passwd
 smtp_sasl_security_options = noanonymous
@@ -2599,19 +2666,13 @@ Password
 [smtp.gmail.com]:587    <user>@gmail.com:<password>
 ```
 
-Encryption map
-
-```bash
-# /etc/postfix/tls_policy
-
-[smtp.gmail.com]:587 encrypt
-```
-
 ```bash
 chmod 600 /etc/postfix/sasl_passwd
-postmap /etc/postfix/sasl_passwd
-postmap /etc/postfix/tls_policy
+postmap lmdb:/etc/postfix/sasl_passwd
 ```
+
+> [!WARNING]
+> Use a Gmail [App Password](https://support.google.com/accounts/answer/185833), not your account password. Keep `sasl_passwd` and the generated `sasl_passwd.lmdb` out of version control — both store the password in clear text.
 
 Restart service and check the status
 
@@ -2827,6 +2888,14 @@ mdadm --stop /dev/md127
 mdadm --assemble --update=name --name=iscsi /dev/md1 /dev/sda1 /dev/sdb1
 ```
 
+Persist the new name so the array does not reappear as `md127` after a reboot
+(the scan results are baked into the initramfs):
+
+```bash
+mdadm --detail --scan > /etc/mdadm.conf
+mkinitcpio -P
+```
+
 ## BTRFS
 
 ### Chunks
@@ -2840,7 +2909,7 @@ pacman -S btrfs-heatmap
 Check chunk allocation
 
 ```bash
-btrfs-heatmap /srv/media/ -o before_defrag.png --size 12
+btrfs-heatmap /srv/media/ -o before_re-allocation.png --size 12
 ```
 
 This will generate the picture of chunk allocation
@@ -2906,11 +2975,6 @@ systemctl enable btrfs-scrub@srv-media.timer
 ```bash
 systemctl start btrfs-scrub@srv-private.timer
 systemctl enable btrfs-scrub@srv-private.timer
-```
-
-```bash
-systemctl start btrfs-scrub@srv-iscsi.timer
-systemctl enable btrfs-scrub@srv-iscsi.timer
 ```
 
 ```bash
@@ -3127,7 +3191,7 @@ The most important:
 - `TIMELINE_LIMIT_HOURLY="0"` - do not create hourly snapshot
 - `NUMBER_LIMIT="20"` - limit the number of snapshots
 - `BACKGROUND_COMPARISON="no"` - disabling CPU-consuming background comparison
-- `ALLOW_USERS="my_admin"` - give the `my_user` user the ability to manage the snapshot
+- `ALLOW_USERS="my_user"` - give the `my_user` user the ability to manage the snapshot
 - `SYNC_ACL="yes"` - pass permissions of user `my_user` to snapshot
 
 Enable auto timeline snapshots and cleanup process.
@@ -3439,7 +3503,7 @@ gem install colorls
   Powerlevel10k is a theme for Zsh. It emphasizes speed, flexibility and out-of-the-box experience. Powerlevel10k.
 
   ```bash
-  yay -S https://github.com/romkatv/powerlevel10k
+  yay -S zsh-theme-powerlevel10k-git
   ```
 
   ```diff
@@ -3487,29 +3551,29 @@ fstabfmt -i /etc/fstab
 First discovery service
 
 ```bash
-$ iscsiadm --mode discovery --portal 10.0.12.90 --type sendtargets
+$ iscsiadm --mode discovery --portal 10.5.20.8 --type sendtargets
 
-10.0.12.90:3260,1 iqn.2025-11.local.qnap-iscsi:1212121212
+10.5.20.8:3260,1 iqn.2025-11.local.qnap-iscsi:1212121212
 ```
 
 Now login to service
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --login
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --login
 ```
 
 If you forget to set up credentials
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.authmethod -v CHAP
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.authmethod -v CHAP
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.username -v my_user
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.username -v my_user
 ```
 
 ```bash
-iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.0.12.90:3260 --op update -n node.session.auth.password -v my_pass
+iscsiadm -m node -T iqn.2025-11.local.qnap-iscsi:1212121212 -p 10.5.20.8:3260 --op update -n node.session.auth.password -v my_pass
 ```
 
 Logout
