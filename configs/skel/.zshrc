@@ -25,10 +25,10 @@ bindkey '^[[B' history-substring-search-down
 
 
 alias ls="colorls -la"
-alias ...="cd ..."
-alias ....="cd ...."
-alias .....="cd ....."
-alias ......="cd ......"
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias .....="cd ../../../.."
+alias ......="cd ../../../../.."
 
 
 export PATH=$HOME/.local/share/gem/ruby/3.3.0/bin:${PATH} # ruby
