@@ -2182,6 +2182,8 @@ Nov 29 00:12:12 qnap minidlnad[72416]: playlist.c:269: warn: Finished parsing pl
 [Gerbera](https://gerbera.io/) is an open source UPnP media server with a web interface. Follow this [guide](https://wiki.archlinux.org/title/Gerbera) to install it.
 
 ```bash
+pacman -S gerbera
+
 mkdir -p /var/cache/gerbera
 chown gerbera:gerbera /var/cache/gerbera
 ```
@@ -2190,14 +2192,47 @@ chown gerbera:gerbera /var/cache/gerbera
 >
 > Remember to disable UI or enable a password for protection.
 
+A ready-to-use configuration is kept in the repo at
+[`configs/gerbera/config.xml`](configs/gerbera/config.xml). Deploy it to
+`/etc/gerbera/config.xml`, then review the settings that matter most:
 
+```diff
+# /etc/gerbera/config.xml (excerpt)
 
+  <server>
+    # Bind to the LAN, not iscsi0 (storage). Otherwise libupnp picks the
+    # lowest-index interface (iscsi0) and clients never see the server.
++   <interface>nas0</interface>
++   <port>52000</port>
+    <ui enabled="yes">
+      <accounts enabled="yes">
+        # Set the real password on the host; never commit the secret.
++       <account user="gerbera" password="__SET_REAL_PASSWORD_ON_HOST__"/>
+      </accounts>
+    </ui>
+    <home>/var/cache/gerbera/</home>
+  </server>
+  <import>
+    <visible-directories>
++     <add-path name="/srv/media"/>
+    </visible-directories>
+  </import>
+```
 
+Enable and start the service
 
+```bash
+systemctl enable gerbera
+systemctl start gerbera
+```
 
+The web interface and the media library are then reachable at `http://qnap:52000`.
 
-
-
+> [!NOTE]
+> UPnP/DLNA discovery uses SSDP multicast (`239.255.255.250:1900`), which is not
+> routed by default. On a switch or router that performs IGMP snooping the server
+> stays invisible until a multicast querier exists — enable PIM-SM (or an IGMP
+> querier) on the router so clients on the LAN can discover it.
 
 ## ISCSI
 
