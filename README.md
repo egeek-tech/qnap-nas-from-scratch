@@ -832,7 +832,7 @@ Install basic packages
 
 ```bash
 pacstrap /mnt amd-ucode base base-devel bash-completion \
-  linux linux-headers linux-firmware openssh vim btrfs-progs
+  linux linux-headers linux-firmware openssh vim btrfs-progs cryptsetup lvm2 mdadm
 ```
 
 > [!IMPORTANT]
@@ -1038,9 +1038,9 @@ yay --editmenu --save
 ```bash
 yay -S fzf-marks \
   mkinitcpio-systemd-extras \
-  # mkinitcpio-systemd-root-password \
   setserial \
-  fstabfmt \
+  fstabfmt
+# Optional: mkinitcpio-systemd-root-password
 ```
 
 ### Configure network
@@ -1102,7 +1102,7 @@ TxFlowControl=yes
 Check flowcontrol
 
 ```bash
-ethtool -a iscsi0                                                                                                                                    ✔  ⚡  66  00:22:53 
+ethtool -a iscsi0
 Pause parameters for iscsi0:
 Autonegotiate:  on
 RX:             on
@@ -1148,10 +1148,10 @@ Hooks:
 # /etc/mkinitcpio.conf
 
 ...
-MODULES=(atlantic igc ethernet)
+MODULES=(atlantic igc vfat)
 ...
 
-HOOKS=(base systemd btrfs autodetect microcode modconf kms keyboard sd-vconsole block mdadm_udev sd-network sd-resolve block sd-clevis sd-encrypt lvm2 filesystems fsck)
+HOOKS=(base systemd btrfs autodetect microcode modconf kms keyboard sd-vconsole block mdadm_udev sd-network sd-resolve sd-clevis sd-encrypt lvm2 filesystems fsck)
 ```
 
 > [!CAUTION]
@@ -1177,7 +1177,7 @@ title Arch
 linux /vmlinuz-linux
 initrd /initramfs-linux.img
 initrd /amd-ucode.img
-options options rd.neednet=1 rd.luks.uuid=7f0cc063-e383-4244-b4cb-12e6c396947f root=UUID=e0ff3e81-a516-4dbf-8103-8503655db764 rw mitigations=auto audit=off console=ttyS0,115200n8 console=tty0 loglevel=6 8250.nr_uarts=2 8250.skip_txen_test=1  
+options rd.neednet=1 rd.luks.uuid=7f0cc063-e383-4244-b4cb-12e6c396947f root=UUID=e0ff3e81-a516-4dbf-8103-8503655db764 rw mitigations=auto audit=off console=ttyS0,115200n8 console=tty0 loglevel=6 8250.nr_uarts=2 8250.skip_txen_test=1  
 ```
 
 > [!WARNING]
@@ -1236,7 +1236,7 @@ cp .zshrc /etc/skel
 Copy file to existing user
 
 ```bash
-cp /etc/shel/* /home/my_user
+cp -a /etc/skel/. /home/my_user/
 ```
 
 #### Timezone and date
@@ -1282,7 +1282,7 @@ hostnamectl hostname qnap
 
 #### Locale (again)
 
-Run this commands again, which will update the `/etc/vconsole.conf` file with the proper value
+Run this command again. It writes `KEYMAP=` to `/etc/vconsole.conf` and, unless `--no-convert` is passed, also applies the closest matching X11 layout (stored as an Xorg `InputClass` snippet in `/etc/X11/xorg.conf.d/00-keyboard.conf`).
 
 ```bash
 localectl set-keymap pl2
@@ -1292,9 +1292,6 @@ localectl set-keymap pl2
 # /etc/vconsole.conf
 
 KEYMAP=pl2
-XKBLAYOUT=pl
-XKBMODEL=pc105
-XKBOPTIONS=terminate:ctrl_alt_bksp
 ```
 
 ### OS optimization
