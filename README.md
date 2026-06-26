@@ -2610,7 +2610,8 @@ Configuration
 # /etc/postfix/main.cf
 
 relayhost = [smtp.gmail.com]:587
-smtp_use_tls = yes
+smtp_tls_security_level = may
+smtp_tls_policy_maps = lmdb:/etc/postfix/tls_policy
 smtp_sasl_auth_enable = yes
 smtp_sasl_password_maps = lmdb:/etc/postfix/sasl_passwd
 smtp_sasl_security_options = noanonymous
@@ -2635,9 +2636,12 @@ Encryption map
 
 ```bash
 chmod 600 /etc/postfix/sasl_passwd
-postmap /etc/postfix/sasl_passwd
-postmap /etc/postfix/tls_policy
+postmap lmdb:/etc/postfix/sasl_passwd
+postmap lmdb:/etc/postfix/tls_policy
 ```
+
+> [!WARNING]
+> Use a Gmail [App Password](https://support.google.com/accounts/answer/185833), not your account password. Keep `sasl_passwd` and the generated `sasl_passwd.lmdb` out of version control — both store the password in clear text.
 
 Restart service and check the status
 
@@ -2853,6 +2857,14 @@ mdadm --stop /dev/md127
 mdadm --assemble --update=name --name=iscsi /dev/md1 /dev/sda1 /dev/sdb1
 ```
 
+Persist the new name so the array does not reappear as `md127` after a reboot
+(the scan results are baked into the initramfs):
+
+```bash
+mdadm --detail --scan > /etc/mdadm.conf
+mkinitcpio -P
+```
+
 ## BTRFS
 
 ### Chunks
@@ -2866,7 +2878,7 @@ pacman -S btrfs-heatmap
 Check chunk allocation
 
 ```bash
-btrfs-heatmap /srv/media/ -o before_defrag.png --size 12
+btrfs-heatmap /srv/media/ -o before_re-allocation.png --size 12
 ```
 
 This will generate the picture of chunk allocation
@@ -2932,11 +2944,6 @@ systemctl enable btrfs-scrub@srv-media.timer
 ```bash
 systemctl start btrfs-scrub@srv-private.timer
 systemctl enable btrfs-scrub@srv-private.timer
-```
-
-```bash
-systemctl start btrfs-scrub@srv-iscsi.timer
-systemctl enable btrfs-scrub@srv-iscsi.timer
 ```
 
 ```bash
@@ -3153,7 +3160,7 @@ The most important:
 - `TIMELINE_LIMIT_HOURLY="0"` - do not create hourly snapshot
 - `NUMBER_LIMIT="20"` - limit the number of snapshots
 - `BACKGROUND_COMPARISON="no"` - disabling CPU-consuming background comparison
-- `ALLOW_USERS="my_admin"` - give the `my_user` user the ability to manage the snapshot
+- `ALLOW_USERS="my_user"` - give the `my_user` user the ability to manage the snapshot
 - `SYNC_ACL="yes"` - pass permissions of user `my_user` to snapshot
 
 Enable auto timeline snapshots and cleanup process.
