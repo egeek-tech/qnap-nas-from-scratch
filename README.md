@@ -1423,7 +1423,7 @@ Media & Private with cache writethrough
 |                                                |                                           |
 +---------+---------+---------+---------+--------+-------------------------------------------+
 |         |         |         |         |        |                                           |
-|   sdc1  |   sdd1  |   sde1  |   sdf1  |  sdg1  |                  nvme0n1p1                |
+|   sdc1  |   sdd1  |   sde1  |   sdf1  |  sdg1  |                  nvme1n1p1                |
 |         |         |         |         |        |                                           |
 +---------+---------+---------+---------+--------+-------------------------------------------+
 ```
@@ -1445,7 +1445,7 @@ ISCSI with cache writeback
 |                   |                    |
 +---------+---------+--------------------+
 |         |         |                    |
-|   sda1  |   sdb1  |     nvme0n1p2      |
+|   sda1  |   sdb1  |     nvme1n1p2      |
 |         |         |                    |
 +---------+---------+--------------------+
 ```
@@ -1519,9 +1519,9 @@ Device     Start        End    Sectors  Size Type
 mdadm --create /dev/md0 --level=6 \
   --raid-devices=5 \
   --metadata=1.2 \
-  --chunk=256 --bitmap=internal \ 
+  --chunk=256 --bitmap=internal \
   --name=files \
-  /dev/sda1 /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1
+  /dev/sdc1 /dev/sdd1 /dev/sde1 /dev/sdf1 /dev/sdg1
 ```
 
 Add the RAID map to `/etc/mdadm.conf`
@@ -1587,8 +1587,8 @@ Update `crypttab`
 ```bash
 # /etc/crypttab 
 
-crypt_files         UUID=c4f4f635-762a-4102-a049-123456789011   /etc/cryptsetup-keys.d/srv_files.key            luks
-crypt_cache_iscsi   UUID=8bf542fe-a3cd-4944-97fe-123456789011   /etc/cryptsetup-keys.d/nvme_cache_iscsi.key     luks
+crypt_files         UUID=c4f4f635-762a-4102-a049-2ea8a139560e   /etc/cryptsetup-keys.d/srv_files.key            luks,discard
+crypt_cache_files   UUID=9bc667a9-ed69-4b4a-93af-b5cc66638196   /etc/cryptsetup-keys.d/nvme_cache_files.key     luks,discard
 ```
 
 After `daemon-reload` it should create following services
@@ -1633,8 +1633,8 @@ pvchange -x n /dev/mapper/crypt_cache_files
 ```
 
 ```bash
-lvcreate -l 6T -n lv_media vg_files /dev/mapper/crypt_files
-lvcreate -L 100%FREE -n lv_private vg_files /dev/mapper/crypt_files
+lvcreate -L 6T -n lv_media vg_files /dev/mapper/crypt_files
+lvcreate -l 100%FREE -n lv_private vg_files /dev/mapper/crypt_files
 ```
 
 Unblock cache parition
@@ -1724,13 +1724,13 @@ btrfs subvolume set-default 256 /srv/media
 Unmount partition, because `media` will be mounted as `subvolume`
 
 ```bash
-unmount /srv/media
+umount /srv/media
 ```
 
 Add entry to `/etc/fstab`
 
 ```bash
-UUID=88af8746-217c-4f15-90b7-17b7aabaa113  /srv/media   btrfs   subvol=@media,noatime,compress=zstd,space_cache=v2   0 0
+UUID=ac6d1083-f1cb-4e20-aadc-f0850f1f4381  /srv/media   btrfs   subvol=@media,noatime,compress=zstd,space_cache=v2   0 0
 ```
 
 Mount all filesystems mentioned in fstab
@@ -1790,13 +1790,13 @@ btrfs subvolume set-default 256 /srv/private
 Unmount partition, because `private` will be mounted as `subvolume`
 
 ```bash
-unmount /srv/private
+umount /srv/private
 ```
 
 Add entry to `/etc/fstab`
 
 ```bash
-UUID=424d6385-a1e1-48d9-bbf7-7627467be80d  /srv/private  btrfs  subvol=@private,noatime,compress=zstd,space_cache=v2,autodefrag  0 0
+UUID=11dea549-6371-46b7-8de7-5f5cd4d5a892  /srv/private  btrfs  subvol=@private,noatime,compress=zstd,space_cache=v2,autodefrag  0 0
 ```
 
 Mount all filesystems mentioned in fstab
@@ -2241,8 +2241,8 @@ Update `crypttab`
 ```bash
 # /etc/crypttab 
 
-crypt_iscsi         UUID=2790f108-1a01-4501-abae-b633d1e89312   /etc/cryptsetup-keys.d/srv_iscsi.key            luks
-crypt_cache_iscsi   UUID=8bf542fe-a3cd-4944-97fe-39cfc49dc8d7   /etc/cryptsetup-keys.d/nvme_cache_iscsi.key     luks
+crypt_iscsi         UUID=2790f108-1a01-4501-abae-b633d1e89312   /etc/cryptsetup-keys.d/srv_iscsi.key            luks,discard
+crypt_cache_iscsi   UUID=8bf542fe-a3cd-4944-97fe-39cfc49dc8d7   /etc/cryptsetup-keys.d/nvme_cache_iscsi.key     luks,discard
 ```
 
 After `daemon-reload` it should create following services
@@ -2305,12 +2305,12 @@ lvs -a -o lv_name,segtype,cachemode,devices vg_iscsi
 ### RAID1
 
 ```bash
-mdadm --create /dev/md0 --level=1 \
+mdadm --create /dev/md1 --level=1 \
   --raid-devices=2 \
   --metadata=1.2 \
   --chunk=256 --bitmap=internal \
   --name=iscsi \
-  /dev/sdf1 /dev/sdg1
+  /dev/sda1 /dev/sdb1
 ```
 
 Add the RAID map to `/etc/mdadm.conf`
@@ -2372,13 +2372,13 @@ btrfs subvolume set-default 256 /srv/iscsi/
 Unmount partition, because `iscsi` will be mounted as `subvolume`
 
 ```bash
-unmount /srv/iscsi
+umount /srv/iscsi
 ```
 
 Add entry to `/etc/fstab`
 
 ```bash
-UUID=f5616810-810a-4a2c-9fdb-856b946236e4  /srv/iscsi    btrfs  subvol=@iscsi,noatime,compress=zstd,space_cache=v2,autodefrag
+UUID=f5616810-810a-4a2c-9fdb-856b946236e4  /srv/iscsi    btrfs  subvol=@iscsi,noatime,compress=zstd,space_cache=v2,autodefrag  0  0
 ```
 
 Mount all filesystems mentioned in fstab
