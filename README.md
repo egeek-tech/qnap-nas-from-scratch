@@ -490,8 +490,13 @@ Instead of adding another kernel parameter, there is possibility to add this set
 ```conf
 # /etc/crypttab.initramfs
 
-luks_root    UUID=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX   /root.key:UUID=ZZZZZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZZZZZZZZZ   luks,keyfile-timeout=10s
+luks_root    UUID=7f0cc063-e383-4244-b4cb-12e6c396947f   /root.key:UUID=1b7f1652-da86-45f3-9e5e-8e5d39fa9077   luks,discard,keyfile-timeout=10s
 ```
+
+> [!WARNING]
+> The UUIDs above are real and specific to **this** machine. When rebuilding,
+> generate your **own** `/root.key` and substitute your **own** partition UUIDs
+> (`blkid`) — never reuse the keyfile or the values shown here.
 
 ### TPM & TANG
 
