@@ -7,6 +7,10 @@ DHCP=ipv4
 LLDP=true
 EmitLLDP=yes
 MulticastDNS=yes
+# IPv4-only: suppress IPv6 link-local (fe80) so mDNS advertises only A
+# records and local resolution of qnap.local returns IPv4, not an fe80 addr.
+LinkLocalAddressing=ipv4
+IPv6AcceptRA=no
 
 [DHCPv4]
 ClientIdentifier=mac
