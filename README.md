@@ -123,7 +123,7 @@ The QNAP [TS-h973AX](https://www.qnap.com/en/product/ts-h973ax) is a 9-bay NAS s
 
 Specification:
 
-- CPU - AMD Ryzen™ Embedded V1500B 2.2 GHz 2 (8 treads)
+- CPU - AMD Ryzen™ Embedded V1500B 2.2 GHz 2 (8 threads)
 - RAM - max 64GB DDR4 SO-DIMM
 - Drive Bays - 9 bays
   - 5 x 3.5" SATA 6 Gb/s
@@ -172,7 +172,7 @@ picocom -b 115200 -f n /dev/ttyUSB0
 
 ### Investigation
 
-I've spent many hours trying to understand why `UART` works unstable and quickly hangs for never distribution like [Debian](https://www.debian.org), [Arch Linux](https://archlinux.org), [TrueNAS](https://www.truenas.com), but works stable during [POST messages](https://en.wikipedia.org/wiki/Power-on_self-test), [BIOS interaction](https://www.techtarget.com/whatis/definition/BIOS-basic-input-output-system) and **all the time** for [QuTS hero](https://www.qnap.com/en/operating-system/quts-hero).
+I've spent many hours trying to understand why `UART` works unstable and quickly hangs for newer distribution like [Debian](https://www.debian.org), [Arch Linux](https://archlinux.org), [TrueNAS](https://www.truenas.com), but works stable during [POST messages](https://en.wikipedia.org/wiki/Power-on_self-test), [BIOS interaction](https://www.techtarget.com/whatis/definition/BIOS-basic-input-output-system) and **all the time** for [QuTS hero](https://www.qnap.com/en/operating-system/quts-hero).
 
 - QuTS hero has an additional command in the [DSDT](https://wiki.archlinux.org/title/DSDT) table for ACPI that allows reconfiguring the UART (`UAR1`, `UAR2`) via an [ACPI calls](https://github.com/mkottman/acpi_call), but after trying to change the configuration it refused to turn on.
 
@@ -314,7 +314,7 @@ There are two possibilities to make the boot work:
    ```bash
    +-------------------------------+
    |           |                   |
-   |   EFI     |      Linus OS     |
+   |   EFI     |      Linux OS     |
    | Partition |                   |
    |           |                   |
    +-------------------------------+
@@ -555,7 +555,7 @@ cryptsetup open /dev/nvme0n1p2 luks_root
 
 ### Use dedicate AMD Encryption controller
 
-AMD Encryption controller is detect  but Kernel report some issue.
+AMD Encryption controller is detected  but Kernel report some issue.
 
 ```bash
 10:00.2 Encryption controller: Advanced Micro Devices, Inc. [AMD] Raven/Raven2/FireFlight/Renoir/Cezanne Platform Security Processor
@@ -673,8 +673,8 @@ Partitioning depends on the approach you choose, with or without a USB DOM (chec
 Required disk configuration:
 
 - Disk partition table need to use `GPT`
-- EFI parition needs to use correct type `EFI System`
-- OS parition should be `Linux filesystem`
+- EFI partition needs to use correct type `EFI System`
+- OS partition should be `Linux filesystem`
 
 ```bash
 $ fdisk /dev/nvme0n1 -l
@@ -1502,7 +1502,7 @@ Device             Start       End   Sectors  Size Type
 Required disk configuration:
 
 - Disk partition table need to use `GPT`
-- OS parition needs be `Linux RAID`
+- OS partition needs be `Linux RAID`
 - minimum 4 disk
 
 ```bash
@@ -1642,7 +1642,7 @@ lvcreate -L 6T -n lv_media vg_files /dev/mapper/crypt_files
 lvcreate -l 100%FREE -n lv_private vg_files /dev/mapper/crypt_files
 ```
 
-Unblock cache parition
+Unblock cache partition
 
 ```bash
 pvchange -x y /dev/mapper/crypt_cache_files
@@ -2206,7 +2206,7 @@ chown gerbera:gerbera /var/cache/gerbera
 Required disk configuration:
 
 - Disk partition table need to use `GPT`
-- OS parition needs be `Linux RAID`
+- OS partition needs be `Linux RAID`
 - minimum 2 disk
 
 ```bash
@@ -2444,7 +2444,7 @@ Here is a concise breakdown of common Input/Output (I/O) methods used in storage
 - `ramdisk` - Creates a virtual block device that resides entirely within the computer's RAM (Random Access Memory).
    Use Case: Provides extremely fast data access (the highest I/O speed available), ideal for temporary files or small caches where speed is critical, and data persistence after power loss is not required.
 
-- `rbd`- Stands for Redos Block Device. It is the native block storage format for the distributed storage system Ceph.
+- `rbd`- Stands for RADOS Block Device. It is the native block storage format for the distributed storage system Ceph.
    Use Case: Used to provide scalable and highly available block storage for virtual machines and containers within large, distributed cloud environments.
 
 #### tgt or targetcli
