@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node web/build.mjs",
-    "test": "node --test web/",
+    "test": "node --test \"web/**/*.test.mjs\"",
     "serve": "python3 -m http.server --directory dist 8080",
     "deploy:cf": "wrangler deploy"
   },
