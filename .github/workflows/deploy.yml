@@ -47,18 +47,18 @@ jobs:
       # Enable Pages on the repo if it isn't already (build type: GitHub Actions), so the
       # first run works without flipping Settings -> Pages by hand.
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           enablement: true
       - name: Deploy to Cloudflare Workers
         if: env.HAS_CF_TOKEN == 'true'
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       - name: Note skipped Cloudflare deploy
         if: env.HAS_CF_TOKEN != 'true'
         run: echo "::warning::CLOUDFLARE_API_TOKEN not set — skipped Cloudflare Workers deploy (GitHub Pages still published)."
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with: { path: dist }
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
