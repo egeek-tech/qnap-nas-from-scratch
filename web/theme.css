@@ -19,7 +19,7 @@
   html{ scroll-behavior:smooth; }
   ::selection{ background:var(--sel); }
   body{ background:var(--paper); color:var(--body); font-family:var(--serif); font-size:17px; line-height:1.75;
-    -webkit-font-smoothing:antialiased; transition:background .3s,color .3s; }
+    -webkit-font-smoothing:antialiased; }
   a{ color:var(--accent); text-decoration:none; } a:hover{ text-decoration:underline; text-underline-offset:3px; }
 
   /* ---------- top bar + progress ---------- */
