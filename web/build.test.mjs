@@ -8,6 +8,7 @@ import anchor from 'markdown-it-anchor';
 import { collectHeadings, renderSidebar, renderRail } from './lib/toc.mjs';
 import { rewriteImages } from './lib/images.mjs';
 import { hashName } from './lib/assets.mjs';
+import { buildSearchIndex, sectionsFromHtml } from './lib/search.mjs';
 
 test('slugify matches GitHub anchors', () => {
   assert.equal(slugify('UART fix'), 'uart-fix');
@@ -112,4 +113,19 @@ test('hashName is stable and content-addressed', () => {
   assert.equal(a, hashName(Buffer.from('hello'), 'app.js'));
   assert.notEqual(a, hashName(Buffer.from('HELLO'), 'app.js'));
   assert.match(a, /^app\.[0-9a-f]{8}\.js$/);
+});
+
+test('buildSearchIndex pairs headings with section text', () => {
+  const headings = [{ level: 1, text: 'Board', slug: 'board' }, { level: 2, text: 'UART', slug: 'uart' }];
+  const sections = { board: 'nine bay nas', uart: 'serial console pins' };
+  const idx = buildSearchIndex(headings, sections);
+  assert.equal(idx.length, 2);
+  assert.deepEqual(idx[0], { slug: 'board', title: 'Board', level: 1, text: 'nine bay nas' });
+});
+
+test('sectionsFromHtml groups text under heading ids', () => {
+  const html = '<h1 id="board">Board</h1><p>nine bay</p><h2 id="uart">UART</h2><p>pins</p>';
+  const s = sectionsFromHtml(html);
+  assert.match(s.board, /nine bay/);
+  assert.match(s.uart, /pins/);
 });
