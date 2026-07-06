@@ -1,9 +1,6 @@
 # /etc/systemd/network/05-iscsi0.network
-#
-# Dedicated iSCSI storage link. It must NOT take part in service
-# discovery (mDNS/LLMNR) and is IPv4-only. This file sorts before
-# 10-nic.network, so it wins the match for iscsi0; nas0 and any other
-# physical NIC still fall through to 10-nic.network.
+# Dedicated iSCSI storage link: no mDNS/LLMNR, no DNS role. Sorts before
+# 10-nic.network so it wins the match for iscsi0; nas0 falls through.
 [Match]
 Name=iscsi0
 
@@ -13,10 +10,11 @@ LLDP=true
 EmitLLDP=yes
 MulticastDNS=no
 LLMNR=no
-# IPv4-only: no IPv6 link-local (fe80) on the storage link.
 LinkLocalAddressing=ipv4
 IPv6AcceptRA=no
+DNSDefaultRoute=no
 
 [DHCPv4]
 ClientIdentifier=mac
 UseNTP=true
+UseDNS=no

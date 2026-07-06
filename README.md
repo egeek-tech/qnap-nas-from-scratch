@@ -460,32 +460,66 @@ During encryption, `cryptsetup` asks for a static password. Create a strong pass
 cryptsetup luksFormat /dev/nvme0n1p2 -c aes-xts-plain64 -s 256 -h sha512
 ```
 
-### Binary key file
+### Binary key file (USB fallback)
 
-A binary key file is one option for unlocking a partition. I recommend using it as a backup on a USB drive. It can be helpful when you need to decrypt the main partition when the TPM + TANG method doesn't work.
+A binary key file on a USB stick is the **offline fallback**: if Tang is unreachable at boot, plugging in the stick unlocks the root without typing the console passphrase. `crypttab.initramfs` (below) references the stick by its **filesystem UUID**, so the stick must carry that exact UUID and a `root.key` at its filesystem root.
 
-Generate a binary key file, which can be stored on USB drive or NFS endpoint
+> [!WARNING]
+> The key file is an **unwrapped LUKS key** — anyone holding the stick can unlock the disk. Keep it physically secure, **never** commit it to version control, and keep a backup of the bytes somewhere safe (e.g. a password manager). The UUIDs below are real and specific to **this** machine; when rebuilding, generate your **own** `root.key` and substitute your **own** UUIDs (`blkid`).
+
+#### 1. Prepare the USB stick (filesystem + fixed UUID)
+
+Identify the stick — **double-check the device**, the wrong one gets wiped:
 
 ```bash
-dd bs=512 count=4 if=/dev/random iflag=fullblock | install -m 0600 /dev/stdin ./root.key
+lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,MODEL
 ```
 
-Add key file to Luks on slot `1`
+Format the stick's partition `ext4` with the **exact** UUID that `crypttab.initramfs` expects (here `/dev/sdX1` is the stick; create a partition first if it has none):
 
 ```bash
-cryptsetup luksAddKey /dev/nvme0n1p2 -S 1 root.key -h sha512
+mkfs.ext4 -L luks-keydev -U 1b7f1652-da86-45f3-9e5e-8e5d39fa9077 /dev/sdX1
 ```
 
-> [!TIP]
-> Read this guide, about the [binary key file](https://wiki.archlinux.org/title/Dm-crypt/System_configuration#rd.luks.key)
+To set the UUID on an **existing** ext4 filesystem instead of reformatting:
 
-Add following kernel parameter
+```bash
+tune2fs -U 1b7f1652-da86-45f3-9e5e-8e5d39fa9077 /dev/sdX1
+```
 
-- `rd.luks.key=XXXXXXXX=/path/to/keyfile:UUID=ZZZZZZZZ`, where `XXXXXXXX` is the UUID encrypted partition and `ZZZZZZZZ` is the UUID of partition where key is located.
+Verify:
 
-- `rd.luks.options=XXXXXXXX=keyfile-timeout=10s`- without this options, Kernel will wait forever for binary key.
+```bash
+blkid /dev/sdX1
+/dev/sdX1: LABEL="luks-keydev" UUID="1b7f1652-da86-45f3-9e5e-8e5d39fa9077" TYPE="ext4"
+```
 
-Instead of adding another kernel parameter, there is possibility to add this settings to `/etc/crypttab.initramfs` which during recreating of initramfs `mkinitcpio -P` will be included to initramfs-linux.img.
+#### 2. Create the binary key file on the stick
+
+Mount it and write 2048 bytes of random data as `root.key` at the filesystem root, mode `0600`:
+
+```bash
+mount /dev/sdX1 /mnt
+dd bs=512 count=4 if=/dev/random iflag=fullblock | install -m 0600 /dev/stdin /mnt/root.key
+```
+
+#### 3. Enrol the key file into the root LUKS
+
+Adds the key to a free slot (prompts for an existing passphrase):
+
+```bash
+cryptsetup luksAddKey /dev/nvme0n1p2 /mnt/root.key
+```
+
+Validate that a new key slot was added:
+
+```bash
+cryptsetup luksDump /dev/nvme0n1p2
+```
+
+#### 4. Reference it from crypttab, then rebuild the initramfs
+
+`crypttab.initramfs` points at `root.key` on the filesystem with that UUID; `keyfile-timeout` keeps an absent stick from stalling the boot:
 
 ```conf
 # /etc/crypttab.initramfs
@@ -493,62 +527,71 @@ Instead of adding another kernel parameter, there is possibility to add this set
 luks_root    UUID=7f0cc063-e383-4244-b4cb-12e6c396947f   /root.key:UUID=1b7f1652-da86-45f3-9e5e-8e5d39fa9077   luks,discard,keyfile-timeout=10s
 ```
 
-> [!WARNING]
-> The UUIDs above are real and specific to **this** machine. When rebuilding,
-> generate your **own** `/root.key` and substitute your **own** partition UUIDs
-> (`blkid`) — never reuse the keyfile or the values shown here.
-
-### TPM & TANG
-
-Validate if TPM is working, in case of issue check this [guide](https://wiki.archlinux.org/title/Trusted_Platform_Module)
+Unmount and rebuild the initramfs (`crypttab.initramfs` is baked into the image):
 
 ```bash
-tpm2_pcrread sha256:7
-  sha256:
-    7 : 0x46R2AO92OXMV4QMJJNDXITEP33BR3FZXGVU01VC0B6XY8LIGEC51K8M00SCJ4DCJM
+umount /mnt
+mkinitcpio -P
 ```
 
-Check if TANG is accessible, in this scenario TANG server is exposed on `7500` port
+> [!TIP]
+> The same result can be achieved with kernel parameters instead of `crypttab.initramfs` (Arch wiki: [binary key file](https://wiki.archlinux.org/title/Dm-crypt/System_configuration#rd.luks.key)):
+> - `rd.luks.key=<luks-uuid>=/root.key:UUID=<keydev-uuid>`
+> - `rd.luks.options=<luks-uuid>=keyfile-timeout=10s` — without a timeout the kernel waits forever for the stick.
+
+#### Boot unlock order
+
+With the key file enrolled, the root unlocks in this order:
+
+1. **USB key file** — stick plugged in → instant, offline (no network, no passphrase).
+2. **Clevis / Tang** — stick absent → normal network auto-unlock.
+3. **Passphrase / recovery key** — typed on the console (UART) if both fail.
+
+### TANG (network-bound unlock)
+
+The root partition auto-unlocks over the network via [Clevis](https://github.com/latchset/clevis) bound to a [Tang](https://github.com/latchset/tang) server — no passphrase needed on a normal boot.
+
+#### Why Tang-only (TPM dropped)
+
+The original design was Clevis SSS with threshold `t:2`: the root key was split across **two** pins and needed **both** to unlock — `tang` (a network pin: "only while this host can reach the Tang server on the trusted LAN") and `tpm2` (sealed to PCR 7 / Secure Boot state: "only on this exact, un-tampered machine"). On paper that is stronger (network **and** machine identity). In practice the AMD fTPM on this box was too fragile to be a *mandatory* factor:
+
+- The fTPM (exposed via the PSP/CCP, which already logs `psp: unable to access the device: you might be running a broken BIOS`) enforces an aggressive **dictionary-attack (DA) lockout** — after a few failed authorizations it refuses every DA-protected operation with `TPM_RC_LOCKOUT (0x921)` for a recovery window.
+- A `tpm2` unseal can also start failing on its own, e.g. PCR 7 drifts after a firmware / Secure-Boot change and the sealed policy no longer matches.
+- Under `t:2` the TPM is **mandatory**, so the moment it locks (or drifts) the root can no longer auto-unlock **even though Tang is perfectly healthy**.
+
+This became a **self-sustaining dead-loop**: TPM locked → `t:2` could not unlock → the box kept retrying / rebooting → every attempt re-hammered the TPM → it stayed locked. The NAS was unreachable for ~weeks. The Tang logs showed a flood of *successful* (`200`) requests that were useless — Clevis kept re-fetching the Tang share on each retry while the TPM share stayed unobtainable.
+
+**Decision: drop the TPM pin and bind Tang-only.** Tang is a tiny, reliable LAN service that already provides the property that matters here ("only unlocks on my network").
+
+- A TPM problem can **never again block boot** — there is no TPM pin.
+- Trade-off: we lose the "only this machine" factor, and boot now depends on Tang being reachable. If Tang is down at boot, unlock falls back to the passphrase / recovery key on the console (UART); a USB key file is the offline auto-fallback (see below).
+- `tpm2-tools` stays installed for diagnostics only.
+
+Check that TANG is reachable (the server listens on port `7500`):
 
 ```bash
-curl http://tang.example.com:7500/adv
+curl http://tang.egeek.internal:7500/adv
 ```
 
-Read how the `clevis` condition [works](https://github.com/latchset/clevis?tab=readme-ov-file#pin-shamir-secret-sharing)
+Bind the root LUKS to Tang — it prompts to trust the advertised signing key, then for an existing LUKS passphrase:
 
 ```bash
-clevis luks bind -d /dev/nvme0n1p2 sss \
-  '{"t":2,"pins":{
-      "tpm2":{"pcr_ids":"7"},
-      "tang":{"url":"http://tang.example.com:7500"}
-    }}'
+clevis luks bind -d /dev/nvme0n1p2 tang \
+  '{"url":"http://tang.egeek.internal:7500"}'
 ```
 
-Validate if new key was added
+Validate the binding (should list a single `tang` pin):
 
 ```bash
-cryptsetup luksDump /dev/nvme0n1p2 
+clevis luks list -d /dev/nvme0n1p2
+1: tang '{"url":"http://tang.egeek.internal:7500"}'
 ```
 
-```diff
-...
-+Keyslots:
-+  2: luks2
-+       Key:        256 bits
-+       Priority:   normal
-+       Cipher:     aes-xts-plain64
-+       Cipher key: 256 bits
-+       PBKDF:      pbkdf2
-+       Hash:       sha256
-+       Iterations: 1000
-...
-Tokens:
-  0: systemd-recovery
-        Keyslot:    0
-+ 1: clevis
-+       Keyslot:    2
-...
-```
+> [!TIP]
+> The binding lives in the LUKS header, not the initramfs, so re-binding does not
+> require `mkinitcpio -P`. Tang must, however, resolve at boot — the network
+> config that makes `tang.egeek.internal` resolvable is what needs the rebuild
+> (see the network section's caution).
 
 ### Decrypt luks partition
 
@@ -837,8 +880,14 @@ Install basic packages
 
 ```bash
 pacstrap /mnt amd-ucode base base-devel bash-completion \
-  linux linux-headers linux-firmware openssh vim btrfs-progs cryptsetup lvm2 mdadm
+  linux linux-headers linux-firmware openssh vim btrfs-progs cryptsetup lvm2 mdadm \
+  dnsutils inetutils
 ```
+
+> [!NOTE]
+> `dnsutils` (`dig`, `nslookup`, `host`) and `inetutils` (`hostname`, `telnet`,
+> `traceroute`, …) are pulled in for network diagnostics — they are invaluable when
+> troubleshooting DNS / the Tang unlock path.
 
 > [!IMPORTANT]
 > Some issues may occur while creating the initramfs file. All will be fixed in the later steps.
@@ -1062,14 +1111,43 @@ Kind=!*
 Type=ether
 
 [Network]
+Domains=egeek.internal
 DHCP=ipv4
 LLDP=true
 EmitLLDP=yes
 MulticastDNS=yes
 
+# IPv4-only: suppress IPv6 link-local (fe80) so mDNS advertises only A
+# records and local resolution of qnap.local returns IPv4, not an fe80 addr.
+LinkLocalAddressing=ipv4
+IPv6AcceptRA=no
+
 [DHCPv4]
 ClientIdentifier=mac
 UseNTP=true
+```
+
+```bash
+# /etc/systemd/network/05-iscsi0.network
+# Dedicated iSCSI storage link: no mDNS/LLMNR, no DNS role. Sorts before
+# 10-nic.network so it wins the match for iscsi0; nas0 falls through.
+[Match]
+Name=iscsi0
+
+[Network]
+DHCP=ipv4
+LLDP=true
+EmitLLDP=yes
+MulticastDNS=no
+LLMNR=no
+LinkLocalAddressing=ipv4
+IPv6AcceptRA=no
+DNSDefaultRoute=no
+
+[DHCPv4]
+ClientIdentifier=mac
+UseNTP=true
+UseDNS=no
 ```
 
 ```bash
@@ -1101,6 +1179,29 @@ AutoNegotiationFlowControl=yes
 RxFlowControl=yes
 TxFlowControl=yes
 ```
+
+> [!IMPORTANT]
+> **`nas0` owns the internal DNS domain, not `resolved.conf`.** `Domains=egeek.internal`
+> is set on the `nas0` link (above) so `*.egeek.internal` is routed to the DHCP-provided
+> resolver. A **global** `Domains=` in `resolved.conf` (with no global `DNS=`) would
+> instead route those names to `FallbackDNS` (1.1.1.1) and break resolution of
+> `tang.egeek.internal` — including during early boot, which stalls the Clevis/Tang
+> root unlock. The storage link `iscsi0` is deliberately kept out of all name
+> resolution (`MulticastDNS=no`, `LLMNR=no`, `DNSDefaultRoute=no`, `UseDNS=no`).
+
+> [!CAUTION]
+> **Any change to these `*.network` / `*.link` files or to `resolved.conf` requires
+> rebuilding the initramfs:**
+>
+> ```bash
+> mkinitcpio -P
+> ```
+>
+> The initramfs carries its own baked-in copies of these files (via the `sd-network`
+> and `sd-resolve` hooks) to bring up `nas0` and resolve `tang.egeek.internal` for the
+> network-bound root unlock. Without a rebuild, the boot-time resolver keeps using the
+> old config even though the running system is already fixed. (`-P` rebuilds all
+> presets; `-p linux` rebuilds only the main image — either refreshes it.)
 
 #### Useful command
 
@@ -1215,12 +1316,17 @@ ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
 FallbackDNS=1.1.1.1
 MulticastDNS=yes
-LLMNR=yes
+LLMNR=no
 Cache=no-negative
 ReadEtcHosts=yes
 StaleRetentionSec=0
-# Domains=mydomain.internal if internal domain is used
 ```
+
+> [!NOTE]
+> No `Domains=` in this global section — on purpose. An internal search/routing
+> domain belongs on the LAN link instead (`nas0`, see `10-nic.network`:
+> `Domains=egeek.internal`). A global `Domains=` here would route those queries to
+> `FallbackDNS` rather than the LAN resolver.
 
 ```bash
 systemctl restart systemd-resolved
