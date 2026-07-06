@@ -8,6 +8,7 @@
     "test": "node --test \"web/**/*.test.mjs\"",
     "serve": "python3 -m http.server --directory dist 8080",
     "deploy:cf": "wrangler deploy",
+    "build:check": "npm run build && wrangler deploy --dry-run --outdir .wrangler/dryrun",
     "lint": "npm run build && npm run lint:js && npm run lint:css && npm run lint:html && npm run lint:toml && npm run lint:format",
     "lint:js": "eslint .",
     "lint:css": "stylelint \"web/**/*.css\"",
@@ -37,6 +38,6 @@
     "prettier": "^3.9.4",
     "stylelint": "^17.14.0",
     "stylelint-config-standard": "^40.0.0",
-    "wrangler": "^3"
+    "wrangler": "^4"
   }
 }

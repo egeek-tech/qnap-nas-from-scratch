@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "qnap-nas-from-scratch",
+  "compatibility_date": "2025-05-01",
+
+  // Static-assets-only Worker (no server code): the built site in ./dist is
+  // uploaded and served straight from Cloudflare's edge. `npm run build` renders
+  // README.md into ./dist first — Cloudflare Workers Builds runs that build
+  // command on push, then `wrangler deploy` uploads the result. There is no
+  // GitHub Actions deploy step and no CLOUDFLARE_API_TOKEN in this repo: the
+  // deploy runs on Cloudflare's side, triggered by the Cloudflare GitHub App.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  },
+
+  "routes": [
+    // Guide served on qnap.egeek.tech. Wrangler provisions the hostname + DNS
+    // record + TLS cert on deploy (the egeek.tech zone must be on this
+    // Cloudflare account).
+    { "pattern": "qnap.egeek.tech", "custom_domain": true }
+  ],
+
+  // Production is served ONLY on the custom domain above — keep it off the
+  // <name>.workers.dev URL. Keep per-version Preview URLs on so Workers Builds
+  // can attach a preview URL to each PR build.
+  "workers_dev": false,
+  "preview_urls": true,
+
+  "observability": {
+    "enabled": true
+  }
+}

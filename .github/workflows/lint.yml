@@ -16,3 +16,6 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run lint
+      # Validate wrangler.jsonc + asset bundling without deploying (no Cloudflare
+      # auth needed). The real deploy runs on Cloudflare Workers Builds.
+      - run: npm run build:check
