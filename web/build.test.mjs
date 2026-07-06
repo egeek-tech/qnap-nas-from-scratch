@@ -73,6 +73,28 @@ test('extractHero reduces markdown in the lede to plain text', () => {
   assert.equal(lede, 'The QNAP TS-h973AX is a 9-bay NAS server.');
 });
 
+test('extractHero skips a leading site-link blockquote (keeps the real lede)', () => {
+  const src = [
+    '# Qnap TS-h973AX - NAS server from scratch',
+    '',
+    '> 📖 Also available as a website: **https://qnap.egeek.tech**',
+    '',
+    '- [Board](#board)',
+    '',
+    '# Board',
+    '',
+    '## Specification',
+    '',
+    'The QNAP TS-h973AX is a 9-bay NAS server in a compact tower design.',
+  ].join('\n');
+  const { title, lede, body } = extractHero(src);
+  assert.equal(title, 'Qnap TS-h973AX - NAS server from scratch');
+  assert.equal(lede, 'The QNAP TS-h973AX is a 9-bay NAS server in a compact tower design.');
+  assert.doesNotMatch(lede, /qnap\.egeek\.tech/);   // banner did NOT hijack the lede
+  assert.doesNotMatch(body, /qnap\.egeek\.tech/);    // banner excluded from the site body
+  assert.match(body, /^# Board/m);
+});
+
 test('collectHeadings + renderers', () => {
   const md = new MarkdownIt();
   const tokens = md.parse('# Board\n\n## Specification\n\n### Investigation\n\n# Linux', {});

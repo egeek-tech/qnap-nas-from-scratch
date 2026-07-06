@@ -14,7 +14,7 @@ export function extractHero(markdown) {
   let title = '';
   if (/^#\s+/.test(lines[i] || '')) { title = lines[i].replace(/^#\s+/, '').trim(); i++; }
 
-  while (i < lines.length && (isBlank(lines[i]) || isTocItem(lines[i]))) i++;
+  while (i < lines.length && (isBlank(lines[i]) || isTocItem(lines[i]) || /^\s*>/.test(lines[i]))) i++;
 
   let lede = '';
   for (let j = i; j < lines.length; j++) {
