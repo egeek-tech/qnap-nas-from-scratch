@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { slugify } from './lib/slugify.mjs';
 import MarkdownIt from 'markdown-it';
 import calloutsPlugin from './lib/callouts.mjs';
@@ -9,6 +10,7 @@ import { collectHeadings, renderSidebar, renderRail } from './lib/toc.mjs';
 import { rewriteImages } from './lib/images.mjs';
 import { hashName } from './lib/assets.mjs';
 import { buildSearchIndex, sectionsFromHtml } from './lib/search.mjs';
+import { build } from './build.mjs';
 
 test('slugify matches GitHub anchors', () => {
   assert.equal(slugify('UART fix'), 'uart-fix');
@@ -128,4 +130,17 @@ test('sectionsFromHtml groups text under heading ids', () => {
   const s = sectionsFromHtml(html);
   assert.match(s.board, /nine bay/);
   assert.match(s.uart, /pins/);
+});
+
+test('build produces a complete dist/index.html', async () => {
+  const { outDir, headings, index } = await build();
+  const html = await readFile(`${outDir}/index.html`, 'utf8');
+  assert.match(html, /<title>Qnap TS-h973AX/);        // hero title from README
+  assert.match(html, /class="lnav"/);                  // sidebar present
+  assert.match(html, /href="#board"/);                 // nav links to sections
+  assert.doesNotMatch(html, /\(#qnap-ts-h973ax\)/);    // README inline TOC stripped
+  assert.match(html, /class="adm adm-/);               // callouts rendered
+  assert.match(html, /pre class="shiki/);              // code highlighted
+  assert.match(html, /<picture>|\/assets\/[^"]+\.svg/);// images rewritten
+  assert.ok(headings.length > 20 && index.length === headings.length);
 });
