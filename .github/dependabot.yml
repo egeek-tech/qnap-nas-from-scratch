@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Keep the GitHub Actions used in workflows up to date. Dependabot opens a weekly PR
+  # (grouped into one) bumping action versions; the required Lint check runs on it and
+  # the repo owner merges it.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ci

@@ -44,12 +44,11 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      # Enable Pages on the repo if it isn't already (build type: GitHub Actions), so the
-      # first run works without flipping Settings -> Pages by hand.
+      # Pages is enabled out-of-band (Settings -> Pages -> Source: GitHub Actions). The
+      # workflow GITHUB_TOKEN cannot create the Pages site itself: enablement: true fails
+      # with "Resource not accessible by integration".
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Deploy to Cloudflare Workers
         if: env.HAS_CF_TOKEN == 'true'
         uses: cloudflare/wrangler-action@v3
