@@ -2,3 +2,7 @@ dist/
 node_modules/
 package-lock.json
 web/template.html
+
+# Managed by release-please; its output need not match Prettier's formatting.
+release-please-config.json
+.release-please-manifest.json

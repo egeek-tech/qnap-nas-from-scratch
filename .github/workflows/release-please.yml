@@ -1,0 +1,48 @@
+# Release automation for the qnap guide, mirroring egeek-tech/go-openholidays but
+# trimmed to what this repo needs: NO goreleaser / binaries / attestation.
+#
+# On every push to master, release-please scans Conventional Commits since the last
+# release and either opens/updates a "Release PR" (bumping .release-please-manifest.json
+# + refreshing CHANGELOG.md), or — when that Release PR is merged — pushes the vX.Y.Z
+# tag and creates the GitHub Release with generated notes.
+#
+# GitHub App identity (egeek-tech release-bot): the action is handed a token minted
+# from the org release-bot App via actions/create-github-app-token, not the default
+# GITHUB_TOKEN. A Release PR opened by GITHUB_TOKEN does NOT trigger lint.yml (GitHub's
+# anti-loop guard), so the required "lint" check would never run and the master ruleset
+# (no bypass) would hold the PR unmergeable. A GitHub App is a separate principal whose
+# actions DO cascade, so the Release PR gets a normal lint run. Uses client-id (app-id is
+# deprecated in create-github-app-token v3+); secrets are org-level.
+#
+# Third-party actions are pinned to a 40-char commit SHA (egeek-tech org policy /
+# sha_pinning_required); the trailing "# vX.Y.Z" comment is a Dependabot hint.
+name: Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.RELEASE_BOT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: release-please
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

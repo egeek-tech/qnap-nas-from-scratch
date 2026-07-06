@@ -4,7 +4,16 @@ import jsonc from 'eslint-plugin-jsonc';
 import prettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'package-lock.json'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'package-lock.json',
+      // Managed by release-please; not linted so its Release PR stays green.
+      'release-please-config.json',
+      '.release-please-manifest.json',
+    ],
+  },
 
   // Node ESM: build tooling and this config file.
   {
