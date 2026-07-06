@@ -7,6 +7,7 @@ import { extractHero } from './lib/hero.mjs';
 import anchor from 'markdown-it-anchor';
 import { collectHeadings, renderSidebar, renderRail } from './lib/toc.mjs';
 import { rewriteImages } from './lib/images.mjs';
+import { hashName } from './lib/assets.mjs';
 
 test('slugify matches GitHub anchors', () => {
   assert.equal(slugify('UART fix'), 'uart-fix');
@@ -104,4 +105,11 @@ test('rewriteImages emits <picture> with webp + fallback + lazy', () => {
   assert.match(out, /loading="lazy"/);
   assert.match(out, /width="1600" height="900"/);
   assert.match(out, /alt="drawing"/);
+});
+
+test('hashName is stable and content-addressed', () => {
+  const a = hashName(Buffer.from('hello'), 'app.js');
+  assert.equal(a, hashName(Buffer.from('hello'), 'app.js'));
+  assert.notEqual(a, hashName(Buffer.from('HELLO'), 'app.js'));
+  assert.match(a, /^app\.[0-9a-f]{8}\.js$/);
 });
