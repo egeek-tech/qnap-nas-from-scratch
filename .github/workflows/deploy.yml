@@ -1,0 +1,32 @@
+name: Deploy site
+# Deferred: manual trigger only. To enable auto-deploy, uncomment the `push` trigger
+# and set the CLOUDFLARE_API_TOKEN secret.
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [master]
+  #   paths: ['README.md', 'assets/**', 'web/**']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Deploy to Cloudflare
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+      - uses: actions/deploy-pages@v4
