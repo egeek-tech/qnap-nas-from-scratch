@@ -14,7 +14,7 @@ import { writeHashed } from './lib/assets.mjs';
 import { buildSearchIndex, sectionsFromHtml } from './lib/search.mjs';
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), '../..');
-const REPO_URL = 'https://github.com/richie-tt/qnap-nas-from-scratch';
+const REPO_URL = 'https://github.com/egeek-tech/qnap-nas-from-scratch';
 const REV = new Date().toISOString().slice(0, 7).replace('-', '.');
 const esc = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
