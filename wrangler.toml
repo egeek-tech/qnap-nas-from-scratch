@@ -1,0 +1,9 @@
+name = "qnap-nas-site"
+compatibility_date = "2026-01-01"
+
+[assets]
+directory = "./dist"
+
+[[routes]]
+pattern = "qnap.egeek.tech"
+custom_domain = true
