@@ -4,6 +4,8 @@ import { slugify } from './lib/slugify.mjs';
 import MarkdownIt from 'markdown-it';
 import calloutsPlugin from './lib/callouts.mjs';
 import { extractHero } from './lib/hero.mjs';
+import anchor from 'markdown-it-anchor';
+import { collectHeadings, renderSidebar, renderRail } from './lib/toc.mjs';
 
 test('slugify matches GitHub anchors', () => {
   assert.equal(slugify('UART fix'), 'uart-fix');
@@ -64,4 +66,30 @@ test('extractHero reduces markdown in the lede to plain text', () => {
   const src = '# T\n\n- [x](#x)\n\n# S\n\nThe QNAP [TS-h973AX](https://q.example) is a `9-bay` **NAS** server.';
   const { lede } = extractHero(src);
   assert.equal(lede, 'The QNAP TS-h973AX is a 9-bay NAS server.');
+});
+
+test('collectHeadings + renderers', () => {
+  const md = new MarkdownIt();
+  const tokens = md.parse('# Board\n\n## Specification\n\n### Investigation\n\n# Linux', {});
+  const h = collectHeadings(tokens);
+  assert.deepEqual(h.map(x => [x.level, x.text, x.slug]), [
+    [1, 'Board', 'board'],
+    [2, 'Specification', 'specification'],
+    [3, 'Investigation', 'investigation'],
+    [1, 'Linux', 'linux'],
+  ]);
+  assert.match(renderSidebar(h), /href="#board"/);
+  assert.match(renderRail(h), /On this page/);
+});
+
+test('collectHeadings slugs match markdown-it-anchor rendered ids (duplicates unique)', () => {
+  const md = new MarkdownIt({ html: true }).use(anchor, { slugify });
+  const src = '# LVM\n\n# LVM\n\n# BTRFS\n\n# LVM';
+  const env = {};
+  const tokens = md.parse(src, env);
+  const slugs = collectHeadings(tokens).map(x => x.slug);
+  const html = md.renderer.render(tokens, md.options, env);
+  const ids = [...html.matchAll(/<h1[^>]*\bid="([^"]+)"/g)].map(m => m[1]);
+  assert.deepEqual(slugs, ids);                       // nav slugs === rendered ids
+  assert.equal(new Set(slugs).size, slugs.length);    // all unique
 });
