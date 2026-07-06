@@ -1,11 +1,25 @@
 import { slugify } from './slugify.mjs';
 
+// Plain display text for a heading: read the inline token's parsed children so
+// markdown markup (inline `code` backticks, link/emphasis syntax) does not leak
+// into the sidebar/rail/search labels. Falls back to the raw content.
+function headingText(inline) {
+  if (!inline) return '';
+  if (inline.children && inline.children.length) {
+    return inline.children
+      .filter(t => t.type === 'text' || t.type === 'code_inline')
+      .map(t => t.content)
+      .join('');
+  }
+  return inline.content || '';
+}
+
 export function collectHeadings(tokens) {
   const out = [];
   for (let i = 0; i < tokens.length; i++) {
     if (tokens[i].type !== 'heading_open') continue;
     const level = Number(tokens[i].tag.slice(1));
-    const text = tokens[i + 1] ? tokens[i + 1].content : '';
+    const text = headingText(tokens[i + 1]);
     // Prefer the id markdown-it-anchor already assigned (it disambiguates duplicate
     // headings as slug, slug-1, slug-2 ...). Fall back to slugify(text) when no anchor
     // plugin ran (unit tests). Keeps nav/rail/search slugs identical to rendered ids.

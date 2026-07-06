@@ -121,6 +121,15 @@ test('collectHeadings slugs match markdown-it-anchor rendered ids (duplicates un
   assert.equal(new Set(slugs).size, slugs.length);    // all unique
 });
 
+test('collectHeadings strips inline markdown from heading text', () => {
+  const md = new MarkdownIt().use(anchor, { slugify });
+  const tokens = md.parse('# Change the `md127` name\n\n## vgcreate - `inconsistent block sizes`', {});
+  const h = collectHeadings(tokens);
+  assert.equal(h[0].text, 'Change the md127 name');
+  assert.equal(h[1].text, 'vgcreate - inconsistent block sizes');
+  assert.doesNotMatch(h[0].text + ' ' + h[1].text, /`/); // no literal backticks in display labels
+});
+
 test('rewriteImages emits <picture> with webp + fallback + lazy', () => {
   const manifest = { 'assets/qnap.jpg': { webp: '/assets/qnap.abc.webp', fallback: '/assets/qnap.abc.jpg', width: 1600, height: 900 } };
   const out = rewriteImages('<p><img src="assets/qnap.jpg" alt="drawing" width="800"/></p>', manifest);
@@ -164,5 +173,8 @@ test('build produces a complete dist/index.html', async () => {
   assert.match(html, /class="adm adm-/);               // callouts rendered
   assert.match(html, /pre class="shiki/);              // code highlighted
   assert.match(html, /<picture>|\/assets\/[^"]+\.svg/);// images rewritten
+  assert.match(html, /href="theme\.[0-9a-f]{8}\.css"/);// relative hashed CSS (Pages subpath-safe)
+  assert.match(html, /src="app\.[0-9a-f]{8}\.js"/);    // relative hashed JS
+  assert.doesNotMatch(html, /(?:href|src)="\//);       // no root-absolute asset paths
   assert.ok(headings.length > 20 && index.length === headings.length);
 });

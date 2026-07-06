@@ -19,7 +19,7 @@ export async function copyFonts(outDir) {
   for (const f of FONTS) {
     await copyFile(require.resolve(f.pkg), path.join(dir, f.file));
     css += `@font-face{font-family:'${f.family}';font-style:normal;font-weight:${f.weight};` +
-           `font-display:swap;src:url('/fonts/${f.file}') format('woff2');}\n`;
+           `font-display:swap;src:url('fonts/${f.file}') format('woff2');}\n`;
   }
   return css;
 }

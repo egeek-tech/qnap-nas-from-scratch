@@ -9,10 +9,12 @@ export function hashName(buf, name) {
   return `${base}.${h}${ext}`;
 }
 
-// Write contents into outDir under a hashed name; return the public path "/<hashed>".
+// Write contents into outDir under a hashed name; return the RELATIVE public path
+// "<hashed>" (no leading slash) so the single-page site resolves assets both at a
+// domain root (qnap.egeek.tech) and under a GitHub Pages project subpath.
 export async function writeHashed(outDir, name, contents) {
   const buf = Buffer.isBuffer(contents) ? contents : Buffer.from(contents);
   const hashed = hashName(buf, name);
   await writeFile(path.join(outDir, hashed), buf);
-  return `/${hashed}`;
+  return hashed;
 }
