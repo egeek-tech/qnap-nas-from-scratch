@@ -1,16 +1,30 @@
 name: Deploy site
-# Deferred: manual trigger only. To enable auto-deploy, uncomment the `push` trigger
-# and set the CLOUDFLARE_API_TOKEN secret.
+# Builds the static site from README.md and publishes it to GitHub Pages on every push
+# to master (and on manual dispatch). GitHub Pages is enabled automatically on first run.
+# Cloudflare Workers is deployed opportunistically in the same run when a
+# CLOUDFLARE_API_TOKEN secret is present; without it, only Pages is published.
 on:
+  push:
+    branches: [master]
+    paths:
+      - 'README.md'
+      - 'assets/**'
+      - 'web/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
-  # push:
-  #   branches: [master]
-  #   paths: ['README.md', 'assets/**', 'web/**']
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# Serialize Pages deployments. Let an in-progress deploy finish rather than cancelling it:
+# cancelling a live Pages publish can leave the site half-updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build-deploy:
@@ -24,10 +38,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
+        # Node 22: matches local dev; the test script relies on `node --test` glob
+        # expansion, which is unavailable on Node 20.
+        with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run build
       - run: npm test
+      # Enable Pages on the repo if it isn't already (build type: GitHub Actions), so the
+      # first run works without flipping Settings -> Pages by hand.
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - name: Deploy to Cloudflare Workers
         if: env.HAS_CF_TOKEN == 'true'
         uses: cloudflare/wrangler-action@v3
