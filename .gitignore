@@ -1,0 +1,8 @@
+# Local design mockups — not hosted, not part of the guide build
+/mockups/
+
+# Superpowers working docs (specs/plans) — kept local, not committed
+/docs/superpowers/
+
+/node_modules/
+/dist/

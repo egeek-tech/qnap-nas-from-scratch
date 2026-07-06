@@ -1,0 +1,25 @@
+{
+  "name": "qnap-nas-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node web/build.mjs",
+    "test": "node --test web/",
+    "serve": "python3 -m http.server --directory dist 8080",
+    "deploy:cf": "wrangler deploy"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5",
+    "@fontsource-variable/oswald": "^5",
+    "@fontsource-variable/source-serif-4": "^5",
+    "@shikijs/markdown-it": "^1",
+    "markdown-it": "^14",
+    "markdown-it-anchor": "^9",
+    "sharp": "^0.33",
+    "shiki": "^1"
+  },
+  "devDependencies": {
+    "wrangler": "^3"
+  }
+}
