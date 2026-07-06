@@ -1,0 +1,61 @@
+<svg viewBox="0 0 232 202" width="100%" height="248" fill="none" style="display:block">
+  <!-- chassis -->
+  <rect x="8" y="8" width="216" height="186" rx="10" fill="rgba(79,214,230,.03)" stroke="var(--bp-line2)" stroke-width="1.6"/>
+  <!-- divider between control strip and drive area -->
+  <line x1="56" y1="14" x2="56" y2="188" stroke="var(--bp-line)" stroke-width="1"/>
+
+  <!-- QNAP wordmark -->
+  <rect x="15" y="17" width="33" height="12" rx="2.5" stroke="var(--bp-muted)" stroke-width="1"/>
+  <text x="31.5" y="26" fill="var(--bp-cyan)" font-family="var(--din)" font-size="8" font-weight="700" letter-spacing="1" text-anchor="middle">QNAP</text>
+
+  <!-- status LEDs -->
+  <circle cx="22" cy="42" r="1.9" fill="var(--bp-amber)"/><circle cx="22" cy="49" r="1.9" fill="var(--bp-amber)"/>
+  <circle cx="22" cy="56" r="1.9" fill="var(--bp-cyan)"/><circle cx="22" cy="63" r="1.9" fill="var(--bp-cyan)"/>
+  <!-- drive activity ticks (1-5, S1-S4) -->
+  <g fill="var(--bp-dim)">
+    <circle cx="22" cy="76" r="1.2"/><circle cx="22" cy="82" r="1.2"/><circle cx="22" cy="88" r="1.2"/>
+    <circle cx="22" cy="94" r="1.2"/><circle cx="22" cy="100" r="1.2"/>
+  </g>
+
+  <!-- power button + glyph -->
+  <rect x="17" y="114" width="24" height="22" rx="5" stroke="var(--bp-muted)" stroke-width="1.2"/>
+  <circle cx="29" cy="126" r="5.4" stroke="var(--bp-cyan)" stroke-width="1.2"/>
+  <line x1="29" y1="120.5" x2="29" y2="126" stroke="var(--bp-cyan)" stroke-width="1.2"/>
+  <!-- copy button -->
+  <rect x="17" y="143" width="24" height="13" rx="3" stroke="var(--bp-muted)" stroke-width="1"/>
+  <path d="M25 149.5h8M29 146v7" stroke="var(--bp-dim)" stroke-width="1"/>
+  <!-- USB-A (blue) -->
+  <rect x="19" y="163" width="21" height="10" rx="1.5" fill="var(--bp-cyan)" opacity=".9"/>
+  <rect x="22" y="166" width="10" height="2.2" fill="var(--bp-bg)"/>
+
+  <!-- 5 x 3.5" trays -->
+  <g stroke="var(--bp-muted)" stroke-width="1.1" fill="rgba(79,214,230,.04)">
+    <rect x="63" y="18" width="27" height="102" rx="3"/>
+    <rect x="94" y="18" width="27" height="102" rx="3"/>
+    <rect x="125" y="18" width="27" height="102" rx="3"/>
+    <rect x="156" y="18" width="27" height="102" rx="3"/>
+    <rect x="187" y="18" width="27" height="102" rx="3"/>
+  </g>
+  <!-- tray lock + handle -->
+  <g stroke="var(--bp-dim)" stroke-width="1">
+    <circle cx="76.5" cy="106" r="2.4"/><line x1="70" y1="113" x2="83" y2="113"/>
+    <circle cx="107.5" cy="106" r="2.4"/><line x1="101" y1="113" x2="114" y2="113"/>
+    <circle cx="138.5" cy="106" r="2.4"/><line x1="132" y1="113" x2="145" y2="113"/>
+    <circle cx="169.5" cy="106" r="2.4"/><line x1="163" y1="113" x2="176" y2="113"/>
+    <circle cx="200.5" cy="106" r="2.4"/><line x1="194" y1="113" x2="207" y2="113"/>
+  </g>
+
+  <!-- 4 x 2.5" bays (S1-S4) -->
+  <rect x="63" y="130" width="72" height="26" rx="3" stroke="var(--bp-cyan)" stroke-width="1.1" fill="rgba(79,214,230,.12)"/>
+  <rect x="142" y="130" width="72" height="26" rx="3" stroke="var(--bp-cyan)" stroke-width="1.1" fill="rgba(79,214,230,.12)"/>
+  <rect x="63" y="160" width="72" height="26" rx="3" stroke="#7fd39a" stroke-width="1.1" fill="rgba(127,211,154,.12)"/>
+  <rect x="142" y="160" width="72" height="26" rx="3" stroke="#7fd39a" stroke-width="1.1" fill="rgba(127,211,154,.12)"/>
+  <g font-family="var(--mono)" font-size="9" font-weight="700">
+    <text x="76" y="146.5" fill="var(--bp-cyan2)">S1</text><text x="155" y="146.5" fill="var(--bp-cyan2)">S2</text>
+    <text x="76" y="176.5" fill="#a7e2ba">S3</text><text x="155" y="176.5" fill="#a7e2ba">S4</text>
+  </g>
+  <g stroke="var(--bp-dim)" stroke-width="1">
+    <line x1="122" y1="137" x2="129" y2="137"/><line x1="201" y1="137" x2="208" y2="137"/>
+    <line x1="122" y1="167" x2="129" y2="167"/><line x1="201" y1="167" x2="208" y2="167"/>
+  </g>
+</svg>
