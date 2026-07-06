@@ -1,4 +1,10 @@
-const TYPES = { note:'Note', tip:'Tip', important:'Important', warning:'Warning', caution:'Caution' };
+const TYPES = {
+  note: 'Note',
+  tip: 'Tip',
+  important: 'Important',
+  warning: 'Warning',
+  caution: 'Caution',
+};
 
 // markdown-it core rule: retag blockquotes that start with "[!TYPE]" into admonition html.
 export default function calloutsPlugin(md) {
@@ -19,10 +25,17 @@ export default function calloutsPlugin(md) {
       inline.content = inline.content.slice(m[0].length).replace(/^\n/, '');
 
       // Find this blockquote's matching close (respecting nested blockquotes).
-      let depth = 0, close = i;
+      let depth = 0,
+        close = i;
       for (let j = i; j < tokens.length; j++) {
         if (tokens[j].type === 'blockquote_open') depth++;
-        if (tokens[j].type === 'blockquote_close') { depth--; if (depth === 0) { close = j; break; } }
+        if (tokens[j].type === 'blockquote_close') {
+          depth--;
+          if (depth === 0) {
+            close = j;
+            break;
+          }
+        }
       }
 
       const openHtml = new state.Token('html_block', '', 0);

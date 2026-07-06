@@ -1,6 +1,8 @@
 export function buildSearchIndex(headings, sections) {
-  return headings.map(h => ({
-    slug: h.slug, title: h.text, level: h.level,
+  return headings.map((h) => ({
+    slug: h.slug,
+    title: h.text,
+    level: h.level,
     text: (sections[h.slug] || '').replace(/\s+/g, ' ').trim().slice(0, 500),
   }));
 }

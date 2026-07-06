@@ -12,14 +12,21 @@ export function extractHero(markdown) {
   while (i < lines.length && (isBlank(lines[i]) || /^\s*<img/i.test(lines[i]))) i++;
 
   let title = '';
-  if (/^#\s+/.test(lines[i] || '')) { title = lines[i].replace(/^#\s+/, '').trim(); i++; }
+  if (/^#\s+/.test(lines[i] || '')) {
+    title = lines[i].replace(/^#\s+/, '').trim();
+    i++;
+  }
 
-  while (i < lines.length && (isBlank(lines[i]) || isTocItem(lines[i]) || /^\s*>/.test(lines[i]))) i++;
+  while (i < lines.length && (isBlank(lines[i]) || isTocItem(lines[i]) || /^\s*>/.test(lines[i])))
+    i++;
 
   let lede = '';
   for (let j = i; j < lines.length; j++) {
     const l = lines[j];
-    if (isBlank(l) || /^#/.test(l)) { if (lede) break; else continue; }
+    if (isBlank(l) || /^#/.test(l)) {
+      if (lede) break;
+      else continue;
+    }
     lede += (lede ? ' ' : '') + l.trim();
   }
   lede = toPlainText(lede);
@@ -35,9 +42,9 @@ export function extractHero(markdown) {
 function toPlainText(s) {
   return s
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1') // images -> alt text
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')  // links  -> link text
-    .replace(/`([^`]+)`/g, '$1')              // inline code
-    .replace(/(\*\*|__)(.+?)\1/g, '$2')       // bold
-    .replace(/(\*|_)(.+?)\1/g, '$2')          // italic
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // links  -> link text
+    .replace(/`([^`]+)`/g, '$1') // inline code
+    .replace(/(\*\*|__)(.+?)\1/g, '$2') // bold
+    .replace(/(\*|_)(.+?)\1/g, '$2') // italic
     .trim();
 }

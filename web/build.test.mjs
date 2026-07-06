@@ -32,17 +32,22 @@ test('callouts convert GFM alerts to admonitions', () => {
 
 test('callouts: marker-only first line does not leave an empty <p>', () => {
   const md = new MarkdownIt({ html: true }).use(calloutsPlugin);
-  const html = md.render('> [!WARNING]\n>\n> Changing the block size will result in the loss of all data and partitions on the disk.');
+  const html = md.render(
+    '> [!WARNING]\n>\n> Changing the block size will result in the loss of all data and partitions on the disk.',
+  );
   assert.match(html, /<div class="adm adm-warning">/);
-  assert.match(html, /Changing the block size will result in the loss of all data and partitions on the disk\./);
+  assert.match(
+    html,
+    /Changing the block size will result in the loss of all data and partitions on the disk\./,
+  );
   assert.doesNotMatch(html, /<p><\/p>/); // no stray empty paragraph
 });
 
 test('callouts: marker search is scoped to its own blockquote', () => {
   const md = new MarkdownIt({ html: true }).use(calloutsPlugin);
   const html = md.render('> ```\n> code\n> ```\n\n> [!NOTE]\n> real note');
-  assert.match(html, /<blockquote>/);                 // the code-only quote stays a plain blockquote
-  assert.match(html, /<div class="adm adm-note">/);    // the real NOTE converts
+  assert.match(html, /<blockquote>/); // the code-only quote stays a plain blockquote
+  assert.match(html, /<div class="adm adm-note">/); // the real NOTE converts
   assert.match(html, /real note/);
 });
 
@@ -68,7 +73,8 @@ test('extractHero pulls title + lede and strips lead image and inline TOC', () =
 });
 
 test('extractHero reduces markdown in the lede to plain text', () => {
-  const src = '# T\n\n- [x](#x)\n\n# S\n\nThe QNAP [TS-h973AX](https://q.example) is a `9-bay` **NAS** server.';
+  const src =
+    '# T\n\n- [x](#x)\n\n# S\n\nThe QNAP [TS-h973AX](https://q.example) is a `9-bay` **NAS** server.';
   const { lede } = extractHero(src);
   assert.equal(lede, 'The QNAP TS-h973AX is a 9-bay NAS server.');
 });
@@ -90,8 +96,8 @@ test('extractHero skips a leading site-link blockquote (keeps the real lede)', (
   const { title, lede, body } = extractHero(src);
   assert.equal(title, 'Qnap TS-h973AX - NAS server from scratch');
   assert.equal(lede, 'The QNAP TS-h973AX is a 9-bay NAS server in a compact tower design.');
-  assert.doesNotMatch(lede, /qnap\.egeek\.tech/);   // banner did NOT hijack the lede
-  assert.doesNotMatch(body, /qnap\.egeek\.tech/);    // banner excluded from the site body
+  assert.doesNotMatch(lede, /qnap\.egeek\.tech/); // banner did NOT hijack the lede
+  assert.doesNotMatch(body, /qnap\.egeek\.tech/); // banner excluded from the site body
   assert.match(body, /^# Board/m);
 });
 
@@ -99,12 +105,15 @@ test('collectHeadings + renderers', () => {
   const md = new MarkdownIt();
   const tokens = md.parse('# Board\n\n## Specification\n\n### Investigation\n\n# Linux', {});
   const h = collectHeadings(tokens);
-  assert.deepEqual(h.map(x => [x.level, x.text, x.slug]), [
-    [1, 'Board', 'board'],
-    [2, 'Specification', 'specification'],
-    [3, 'Investigation', 'investigation'],
-    [1, 'Linux', 'linux'],
-  ]);
+  assert.deepEqual(
+    h.map((x) => [x.level, x.text, x.slug]),
+    [
+      [1, 'Board', 'board'],
+      [2, 'Specification', 'specification'],
+      [3, 'Investigation', 'investigation'],
+      [1, 'Linux', 'linux'],
+    ],
+  );
   assert.match(renderSidebar(h), /href="#board"/);
   assert.match(renderRail(h), /On this page/);
 });
@@ -114,16 +123,19 @@ test('collectHeadings slugs match markdown-it-anchor rendered ids (duplicates un
   const src = '# LVM\n\n# LVM\n\n# BTRFS\n\n# LVM';
   const env = {};
   const tokens = md.parse(src, env);
-  const slugs = collectHeadings(tokens).map(x => x.slug);
+  const slugs = collectHeadings(tokens).map((x) => x.slug);
   const html = md.renderer.render(tokens, md.options, env);
-  const ids = [...html.matchAll(/<h1[^>]*\bid="([^"]+)"/g)].map(m => m[1]);
-  assert.deepEqual(slugs, ids);                       // nav slugs === rendered ids
-  assert.equal(new Set(slugs).size, slugs.length);    // all unique
+  const ids = [...html.matchAll(/<h1[^>]*\bid="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(slugs, ids); // nav slugs === rendered ids
+  assert.equal(new Set(slugs).size, slugs.length); // all unique
 });
 
 test('collectHeadings strips inline markdown from heading text', () => {
   const md = new MarkdownIt().use(anchor, { slugify });
-  const tokens = md.parse('# Change the `md127` name\n\n## vgcreate - `inconsistent block sizes`', {});
+  const tokens = md.parse(
+    '# Change the `md127` name\n\n## vgcreate - `inconsistent block sizes`',
+    {},
+  );
   const h = collectHeadings(tokens);
   assert.equal(h[0].text, 'Change the md127 name');
   assert.equal(h[1].text, 'vgcreate - inconsistent block sizes');
@@ -131,8 +143,18 @@ test('collectHeadings strips inline markdown from heading text', () => {
 });
 
 test('rewriteImages emits <picture> with webp + fallback + lazy', () => {
-  const manifest = { 'assets/qnap.jpg': { webp: '/assets/qnap.abc.webp', fallback: '/assets/qnap.abc.jpg', width: 1600, height: 900 } };
-  const out = rewriteImages('<p><img src="assets/qnap.jpg" alt="drawing" width="800"/></p>', manifest);
+  const manifest = {
+    'assets/qnap.jpg': {
+      webp: '/assets/qnap.abc.webp',
+      fallback: '/assets/qnap.abc.jpg',
+      width: 1600,
+      height: 900,
+    },
+  };
+  const out = rewriteImages(
+    '<p><img src="assets/qnap.jpg" alt="drawing" width="800"/></p>',
+    manifest,
+  );
   assert.match(out, /<picture>/);
   assert.match(out, /srcset="\/assets\/qnap\.abc\.webp" type="image\/webp"/);
   assert.match(out, /src="\/assets\/qnap\.abc\.jpg"/);
@@ -149,7 +171,10 @@ test('hashName is stable and content-addressed', () => {
 });
 
 test('buildSearchIndex pairs headings with section text', () => {
-  const headings = [{ level: 1, text: 'Board', slug: 'board' }, { level: 2, text: 'UART', slug: 'uart' }];
+  const headings = [
+    { level: 1, text: 'Board', slug: 'board' },
+    { level: 2, text: 'UART', slug: 'uart' },
+  ];
   const sections = { board: 'nine bay nas', uart: 'serial console pins' };
   const idx = buildSearchIndex(headings, sections);
   assert.equal(idx.length, 2);
@@ -166,15 +191,15 @@ test('sectionsFromHtml groups text under heading ids', () => {
 test('build produces a complete dist/index.html', async () => {
   const { outDir, headings, index } = await build();
   const html = await readFile(`${outDir}/index.html`, 'utf8');
-  assert.match(html, /<title>Qnap TS-h973AX/);        // hero title from README
-  assert.match(html, /class="lnav"/);                  // sidebar present
-  assert.match(html, /href="#board"/);                 // nav links to sections
-  assert.doesNotMatch(html, /\(#qnap-ts-h973ax\)/);    // README inline TOC stripped
-  assert.match(html, /class="adm adm-/);               // callouts rendered
-  assert.match(html, /pre class="shiki/);              // code highlighted
-  assert.match(html, /<picture>|\/assets\/[^"]+\.svg/);// images rewritten
-  assert.match(html, /href="theme\.[0-9a-f]{8}\.css"/);// relative hashed CSS (Pages subpath-safe)
-  assert.match(html, /src="app\.[0-9a-f]{8}\.js"/);    // relative hashed JS
-  assert.doesNotMatch(html, /(?:href|src)="\//);       // no root-absolute asset paths
+  assert.match(html, /<title>Qnap TS-h973AX/); // hero title from README
+  assert.match(html, /class="lnav"/); // sidebar present
+  assert.match(html, /href="#board"/); // nav links to sections
+  assert.doesNotMatch(html, /\(#qnap-ts-h973ax\)/); // README inline TOC stripped
+  assert.match(html, /class="adm adm-/); // callouts rendered
+  assert.match(html, /pre class="shiki/); // code highlighted
+  assert.match(html, /<picture>|\/assets\/[^"]+\.svg/); // images rewritten
+  assert.match(html, /href="theme\.[0-9a-f]{8}\.css"/); // relative hashed CSS (Pages subpath-safe)
+  assert.match(html, /src="app\.[0-9a-f]{8}\.js"/); // relative hashed JS
+  assert.doesNotMatch(html, /(?:href|src)="\//); // no root-absolute asset paths
   assert.ok(headings.length > 20 && index.length === headings.length);
 });

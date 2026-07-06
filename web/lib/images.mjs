@@ -25,15 +25,17 @@ export async function optimizeAssets(srcDir, outDir, hashFn) {
     const width = Math.min(meta.width || MAX_W, MAX_W);
     const resized = img.resize({ width, withoutEnlargement: true });
     const webpBuf = await resized.clone().webp({ quality: 78 }).toBuffer();
-    const fbBuf = ext === '.png'
-      ? await resized.clone().png({ compressionLevel: 9 }).toBuffer()
-      : await resized.clone().jpeg({ quality: 80, mozjpeg: true }).toBuffer();
+    const fbBuf =
+      ext === '.png'
+        ? await resized.clone().png({ compressionLevel: 9 }).toBuffer()
+        : await resized.clone().jpeg({ quality: 80, mozjpeg: true }).toBuffer();
     const outMeta = await sharp(webpBuf).metadata();
     const base = name.replace(/\.[^.]+$/, '');
     manifest[key] = {
       webp: await hashFn(webpBuf, `${base}.webp`),
       fallback: await hashFn(fbBuf, name),
-      width: outMeta.width, height: outMeta.height,
+      width: outMeta.width,
+      height: outMeta.height,
     };
   }
   return manifest;
@@ -45,12 +47,15 @@ export function rewriteImages(html, manifest) {
     const src = (tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i) || [])[1];
     if (!src || !manifest[src]) return tag;
     const { webp, fallback, width, height } = manifest[src];
-    const alt = (tag.match(/\balt\s*=\s*["']([^"']*)["']/i) || [, ''])[1];
+    const alt = (tag.match(/\balt\s*=\s*["']([^"']*)["']/i) || ['', ''])[1];
     const dims = width ? ` width="${width}" height="${height}"` : '';
-    if (webp === fallback) { // svg
+    if (webp === fallback) {
+      // svg
       return `<img src="${fallback}" alt="${alt}" loading="lazy" decoding="async">`;
     }
-    return `<picture><source srcset="${webp}" type="image/webp">` +
-      `<img src="${fallback}" alt="${alt}"${dims} loading="lazy" decoding="async"></picture>`;
+    return (
+      `<picture><source srcset="${webp}" type="image/webp">` +
+      `<img src="${fallback}" alt="${alt}"${dims} loading="lazy" decoding="async"></picture>`
+    );
   });
 }

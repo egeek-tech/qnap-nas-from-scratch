@@ -16,7 +16,8 @@ import { buildSearchIndex, sectionsFromHtml } from './lib/search.mjs';
 const ROOT = path.resolve(fileURLToPath(import.meta.url), '../..');
 const REPO_URL = 'https://github.com/richie-tt/qnap-nas-from-scratch';
 const REV = new Date().toISOString().slice(0, 7).replace('-', '.');
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = (s) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export async function build({ root = ROOT } = {}) {
   const outDir = path.join(root, 'dist');
@@ -36,9 +37,8 @@ export async function build({ root = ROOT } = {}) {
   const headings = collectHeadings(tokens);
   let content = md.renderer.render(tokens, md.options, env);
 
-  const manifest = await optimizeAssets(
-    path.join(root, 'assets'), outDir,
-    (buf, name) => writeHashed(outDir, name, buf)
+  const manifest = await optimizeAssets(path.join(root, 'assets'), outDir, (buf, name) =>
+    writeHashed(outDir, name, buf),
   );
   content = rewriteImages(content, manifest);
 
@@ -64,7 +64,10 @@ export async function build({ root = ROOT } = {}) {
     .replaceAll('{{SIDEBAR}}', renderSidebar(headings))
     .replaceAll('{{RAIL}}', renderRail(headings))
     .replaceAll('{{CONTENT}}', content)
-    .replaceAll('{{SECTION_COUNT}}', String(headings.filter(h => h.level === 1).length).padStart(2, '0'))
+    .replaceAll(
+      '{{SECTION_COUNT}}',
+      String(headings.filter((h) => h.level === 1).length).padStart(2, '0'),
+    )
     .replaceAll('{{REV}}', REV)
     .replaceAll('{{SEARCH_INDEX}}', JSON.stringify(index).replace(/</g, '\\u003c'));
 
@@ -74,6 +77,11 @@ export async function build({ root = ROOT } = {}) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   build()
-    .then(r => console.log(`built dist/ — ${r.headings.length} headings, ${r.index.length} search entries`))
-    .catch(e => { console.error(e); process.exit(1); });
+    .then((r) =>
+      console.log(`built dist/ — ${r.headings.length} headings, ${r.index.length} search entries`),
+    )
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
 }
