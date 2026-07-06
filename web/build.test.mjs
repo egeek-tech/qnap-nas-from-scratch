@@ -21,3 +21,19 @@ test('callouts convert GFM alerts to admonitions', () => {
   assert.match(html, /Boot only from USB or NVMe\./);
   assert.match(md.render('> just a quote'), /<blockquote>/); // normal quote untouched
 });
+
+test('callouts: marker-only first line does not leave an empty <p>', () => {
+  const md = new MarkdownIt({ html: true }).use(calloutsPlugin);
+  const html = md.render('> [!WARNING]\n>\n> Changing the block size will result in the loss of all data and partitions on the disk.');
+  assert.match(html, /<div class="adm adm-warning">/);
+  assert.match(html, /Changing the block size will result in the loss of all data and partitions on the disk\./);
+  assert.doesNotMatch(html, /<p><\/p>/); // no stray empty paragraph
+});
+
+test('callouts: marker search is scoped to its own blockquote', () => {
+  const md = new MarkdownIt({ html: true }).use(calloutsPlugin);
+  const html = md.render('> ```\n> code\n> ```\n\n> [!NOTE]\n> real note');
+  assert.match(html, /<blockquote>/);                 // the code-only quote stays a plain blockquote
+  assert.match(html, /<div class="adm adm-note">/);    // the real NOTE converts
+  assert.match(html, /real note/);
+});
