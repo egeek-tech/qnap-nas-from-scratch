@@ -524,7 +524,7 @@ cryptsetup luksDump /dev/nvme0n1p2
 ```conf
 # /etc/crypttab.initramfs
 
-luks_root    UUID=7f0cc063-e383-4244-b4cb-12e6c396947f   /root.key:UUID=1b7f1652-da86-45f3-9e5e-8e5d39fa9077   luks,discard,keyfile-timeout=10s
+luks_root    UUID=7f0cc063-e383-4244-b4cb-12e6c396947f   /root.key:UUID=1b7f1652-da86-45f3-9e5e-8e5d39fa9077   luks,discard,keyfile-timeout=5s
 ```
 
 Unmount and rebuild the initramfs (`crypttab.initramfs` is baked into the image):
@@ -537,7 +537,7 @@ mkinitcpio -P
 > [!TIP]
 > The same result can be achieved with kernel parameters instead of `crypttab.initramfs` (Arch wiki: [binary key file](https://wiki.archlinux.org/title/Dm-crypt/System_configuration#rd.luks.key)):
 > - `rd.luks.key=<luks-uuid>=/root.key:UUID=<keydev-uuid>`
-> - `rd.luks.options=<luks-uuid>=keyfile-timeout=10s` — without a timeout the kernel waits forever for the stick.
+> - `rd.luks.options=<luks-uuid>=keyfile-timeout=5s` — without a timeout the kernel waits forever for the stick.
 
 #### Boot unlock order
 
