@@ -7,7 +7,14 @@
     "build": "node web/build.mjs",
     "test": "node --test \"web/**/*.test.mjs\"",
     "serve": "python3 -m http.server --directory dist 8080",
-    "deploy:cf": "wrangler deploy"
+    "deploy:cf": "wrangler deploy",
+    "lint": "npm run build && npm run lint:js && npm run lint:css && npm run lint:html && npm run lint:toml && npm run lint:format",
+    "lint:js": "eslint .",
+    "lint:css": "stylelint \"web/**/*.css\"",
+    "lint:html": "html-validate dist/index.html",
+    "lint:toml": "taplo lint && taplo fmt --check",
+    "lint:format": "prettier --check \"**/*.{js,mjs,css,json}\"",
+    "lint:fix": "eslint . --fix && stylelint \"web/**/*.css\" --fix && taplo fmt && prettier --write \"**/*.{js,mjs,css,json}\""
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5",
@@ -20,6 +27,16 @@
     "shiki": "^1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@taplo/cli": "^0.7.0",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsonc": "^3.2.0",
+    "globals": "^17.7.0",
+    "html-validate": "^11.4.0",
+    "prettier": "^3.9.4",
+    "stylelint": "^17.14.0",
+    "stylelint-config-standard": "^40.0.0",
     "wrangler": "^3"
   }
 }
