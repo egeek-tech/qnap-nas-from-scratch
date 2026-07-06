@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="{{THEME}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-mode',t);}catch(e){}</script>
+<title>{{TITLE}}</title>
+<meta name="description" content="{{LEDE}}">
+<link rel="stylesheet" href="{{CSS_HREF}}">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="top">
+    <div class="logo"><span class="mk">~/</span> QNAP&nbsp;<small>/ TS-h973AX guide</small></div>
+    <button type="button" class="search" id="searchbtn" aria-label="Search the guide">Search the guide… <span class="kbd">/</span></button>
+    <button type="button" class="icobtn" id="themebtn" title="Toggle theme" aria-label="Toggle theme">◐</button>
+    <a class="icobtn" href="{{REPO_URL}}" title="GitHub" aria-label="GitHub">★</a>
+  </div>
+  <div class="progress"><i id="bar"></i></div>
+
+  <div class="herowrap">
+    <div class="heroinner">
+      <div class="reveal">
+        <div class="kick"><span class="rule"></span><span>NAS server / from scratch</span></div>
+        <h1>{{HERO_TITLE}}</h1>
+        <div class="dimline"><span class="tick"></span><span class="span"></span><span class="lab">9 DRIVE BAYS</span><span class="span"></span><span class="tick"></span></div>
+        <p class="lede">{{LEDE}}</p>
+        <div class="hcta"><a class="hbtn pri" href="#content">Open the guide →</a><a class="hbtn" href="{{REPO_URL}}">Source ↗</a></div>
+      </div>
+      <div class="frame reveal d2">
+        {{NAS_SVG}}
+        <div class="cap">FIG.1 — Front elevation</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="lnav" id="lnav" aria-label="Sections">{{SIDEBAR}}</aside>
+    <main id="content">{{CONTENT}}</main>
+    <aside class="rail" id="rail" aria-label="On this page">{{RAIL}}</aside>
+  </div>
+
+  <div class="tbwrap">
+    <div class="titleblock">
+      <div class="tb"><div class="l">Project title</div><div class="v c">{{TITLE}}</div></div>
+      <div class="tb"><div class="l">Sheet</div><div class="v">01 / {{SECTION_COUNT}}</div></div>
+      <div class="tb"><div class="l">Scale</div><div class="v">1:1</div></div>
+      <div class="tb"><div class="l">Rev</div><div class="v">{{REV}}</div></div>
+      <div class="tb"><div class="l">Source</div><div class="v">README.md</div></div>
+    </div>
+  </div>
+
+  <dialog id="searchdlg" class="searchdlg"><input id="searchinput" type="search" placeholder="Search…" aria-label="Search"><div id="searchresults"></div></dialog>
+  <script id="searchdata" type="application/json">{{SEARCH_INDEX}}</script>
+  <script src="{{JS_HREF}}" defer></script>
+</body>
+</html>
