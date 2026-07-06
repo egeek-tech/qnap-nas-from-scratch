@@ -36,8 +36,8 @@ jobs:
       # secrets can't be referenced in a step-level `if:`; map to an env flag here.
       HAS_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         # Node 22: matches local dev; the test script relies on `node --test` glob
         # expansion, which is unavailable on Node 20.
         with: { node-version: 22, cache: npm }
