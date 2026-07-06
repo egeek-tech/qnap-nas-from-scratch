@@ -6,6 +6,7 @@ import calloutsPlugin from './lib/callouts.mjs';
 import { extractHero } from './lib/hero.mjs';
 import anchor from 'markdown-it-anchor';
 import { collectHeadings, renderSidebar, renderRail } from './lib/toc.mjs';
+import { rewriteImages } from './lib/images.mjs';
 
 test('slugify matches GitHub anchors', () => {
   assert.equal(slugify('UART fix'), 'uart-fix');
@@ -92,4 +93,15 @@ test('collectHeadings slugs match markdown-it-anchor rendered ids (duplicates un
   const ids = [...html.matchAll(/<h1[^>]*\bid="([^"]+)"/g)].map(m => m[1]);
   assert.deepEqual(slugs, ids);                       // nav slugs === rendered ids
   assert.equal(new Set(slugs).size, slugs.length);    // all unique
+});
+
+test('rewriteImages emits <picture> with webp + fallback + lazy', () => {
+  const manifest = { 'assets/qnap.jpg': { webp: '/assets/qnap.abc.webp', fallback: '/assets/qnap.abc.jpg', width: 1600, height: 900 } };
+  const out = rewriteImages('<p><img src="assets/qnap.jpg" alt="drawing" width="800"/></p>', manifest);
+  assert.match(out, /<picture>/);
+  assert.match(out, /srcset="\/assets\/qnap\.abc\.webp" type="image\/webp"/);
+  assert.match(out, /src="\/assets\/qnap\.abc\.jpg"/);
+  assert.match(out, /loading="lazy"/);
+  assert.match(out, /width="1600" height="900"/);
+  assert.match(out, /alt="drawing"/);
 });
