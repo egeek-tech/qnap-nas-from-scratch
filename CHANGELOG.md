@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/egeek-tech/qnap-nas-from-scratch/compare/v1.0.1...v1.0.2) (2026-07-07)
+
+
+### Documentation
+
+* add security policy ([a4808fd](https://github.com/egeek-tech/qnap-nas-from-scratch/commit/a4808fd37a99d7c0182fe28fc6c488fc23f04fb4))
+
 ## [1.0.1](https://github.com/egeek-tech/qnap-nas-from-scratch/compare/v1.0.0...v1.0.1) (2026-07-07)
 
 
