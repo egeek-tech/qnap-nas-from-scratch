@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.0](https://github.com/egeek-tech/qnap-nas-from-scratch/compare/qnap-nas-from-scratch-v1.0.0...qnap-nas-from-scratch-v1.1.0) (2026-07-06)
+## 1.0.0 (2026-07-06)
 
 
 ### Features
