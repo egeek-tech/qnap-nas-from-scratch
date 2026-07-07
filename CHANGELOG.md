@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.1](https://github.com/egeek-tech/qnap-nas-from-scratch/compare/v1.0.0...v1.0.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* point built-site links at egeek-tech after org migration ([7e21f80](https://github.com/egeek-tech/qnap-nas-from-scratch/commit/7e21f80f576a2e39ea378a43da54a2e3b03812d1))
+
+
+### Documentation
+
+* make the website link a prominent banner in the README ([c2b2491](https://github.com/egeek-tech/qnap-nas-from-scratch/commit/c2b249127a96adeb7b77df9775a71325d26b2c18))
+* make the website link a prominent banner in the README ([f76145e](https://github.com/egeek-tech/qnap-nas-from-scratch/commit/f76145e65275c3244958c84b1c337f08eebb42cf))
+
 ## 1.0.0 (2026-07-06)
 
 
