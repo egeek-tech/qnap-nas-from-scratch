@@ -8,6 +8,9 @@ export function extractHero(markdown) {
   let i = 0;
   const isBlank = (l) => l.trim() === '';
   const isTocItem = (l) => /^\s*-\s+\[.*\]\(#.*\)/.test(l);
+  const isRule = (l) => /^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l);
+  // The "Also available as a website" banner is an <hN> element (see the README head).
+  const isSiteBanner = (l) => /^\s*<\/?h[1-6][\s>]/i.test(l);
 
   while (i < lines.length && (isBlank(lines[i]) || /^\s*<img/i.test(lines[i]))) i++;
 
@@ -17,8 +20,9 @@ export function extractHero(markdown) {
     i++;
   }
 
-  while (i < lines.length && (isBlank(lines[i]) || isTocItem(lines[i]) || /^\s*>/.test(lines[i])))
-    i++;
+  const isHeadNoise = (l) =>
+    isBlank(l) || isTocItem(l) || /^\s*>/.test(l) || isRule(l) || isSiteBanner(l);
+  while (i < lines.length && isHeadNoise(lines[i])) i++;
 
   let lede = '';
   for (let j = i; j < lines.length; j++) {
