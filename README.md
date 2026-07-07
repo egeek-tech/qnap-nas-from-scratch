@@ -2,7 +2,11 @@
 
 # Qnap TS-h973AX - NAS server from scratch
 
-> 📖 Also available as a website: **https://qnap.egeek.tech**
+---
+
+<h3 align="center">📖 Also available as a website: <a href="https://qnap.egeek.tech">https://qnap.egeek.tech</a></h3>
+
+---
 
 - [Qnap TS-h973AX - NAS server from scratch](#qnap-ts-h973ax---nas-server-from-scratch)
 - [Board](#board)

@@ -79,11 +79,15 @@ test('extractHero reduces markdown in the lede to plain text', () => {
   assert.equal(lede, 'The QNAP TS-h973AX is a 9-bay NAS server.');
 });
 
-test('extractHero skips a leading site-link blockquote (keeps the real lede)', () => {
+test('extractHero skips the leading site-link banner (keeps the real lede)', () => {
   const src = [
     '# Qnap TS-h973AX - NAS server from scratch',
     '',
-    '> 📖 Also available as a website: **https://qnap.egeek.tech**',
+    '---',
+    '',
+    '<h3 align="center">📖 Also available as a website: <a href="https://qnap.egeek.tech">https://qnap.egeek.tech</a></h3>',
+    '',
+    '---',
     '',
     '- [Board](#board)',
     '',
