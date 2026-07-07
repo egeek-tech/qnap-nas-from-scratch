@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "qnap-nas-from-scratch",
-  "compatibility_date": "2025-05-01",
+  "name": "qnap-nas-site",
+  "compatibility_date": "2026-01-01",
 
   // Static-assets-only Worker (no server code): the built site in ./dist is
   // uploaded and served straight from Cloudflare's edge. `npm run build` renders
