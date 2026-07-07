@@ -6,3 +6,6 @@
 
 /node_modules/
 /dist/
+
+# Wrangler local state and `deploy --dry-run` output (build:check).
+/.wrangler/
